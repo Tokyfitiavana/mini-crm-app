@@ -1,0 +1,13 @@
+/* Réinitialisation complète */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Force le plein écran */
+html, body, #root {
+  @apply w-full h-full overflow-x-hidden;
+}
