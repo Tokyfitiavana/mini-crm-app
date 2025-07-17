@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import StatCard from "../components/StatCard";
 import {
@@ -5,66 +6,130 @@ import {
   DollarSign,
   ShoppingBag,
   TrendingUp,
-  Calendar,
   MessageSquare,
-  Briefcase,
+  Trophy,
 } from "lucide-react";
-import RevenueChart from "../components/charts/RevenueChart";
+import Chart from "react-apexcharts";
+import axios from "axios";
+import Swal from "../utils/swal";
+import ClientStatusPieChart from "../components/charts/ClientStatusPieChart";
+
+type Kpi = {
+  icon: React.ReactElement;
+  title: string;
+  value: string;
+  growth: number;
+  trend: "up" | "down";
+  subtitle?: string;
+};
+
+type SalesDataPoint = { month: string; total: number };
+type Activity = { content: string; date: string; userName: string };
+type ClientStatus = { status: string; count: number };
 
 const Dashboard = () => {
-  const kpiData = [
-    {
-      icon: <DollarSign size={24} className="text-sky-500" />,
-      title: "Revenu Total",
-      value: "88 000 $",
-      growth: 23,
-      trend: "up",
-    },
-    {
-      icon: <ShoppingBag size={24} className="text-orange-500" />,
-      title: "Ventes Total",
-      value: "245 000",
-      growth: 48.5,
-      trend: "up",
-    },
-    {
-      icon: <Users size={24} className="text-purple-500" />,
-      title: "Clients Actifs",
-      value: "12 500",
-      growth: 6,
-      trend: "up",
-    },
-    {
-      icon: <TrendingUp size={24} className="text-rose-500" />,
-      title: "Taux de Conversion",
-      value: "5.8%",
-      growth: 1.2,
-      trend: "down",
-    },
-  ];
+  const [stats, setStats] = useState<any | null>(null);
+  const [salesData, setSalesData] = useState<SalesDataPoint[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [clientStatusData, setClientStatusData] = useState<ClientStatus[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentActivities = [
-    {
-      icon: <Calendar size={16} className="text-blue-500" />,
-      text: "Nouvel événement ajouté : Réunion client",
-      time: "Il y a 10 min",
+  useEffect(() => {
+    const fetchAllDashboardData = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
+        const [statsRes, salesRes, activityRes, clientStatusRes] =
+          await Promise.all([
+            axios.get("http://localhost:3001/api/dashboard-stats", config),
+            axios.get(
+              "http://localhost:3001/api/dashboard-stats/sales-overview",
+              config
+            ),
+            axios.get(
+              "http://localhost:3001/api/dashboard-stats/recent-activity",
+              config
+            ),
+            axios.get(
+              "http://localhost:3001/api/dashboard-stats/client-status-distribution",
+              config
+            ),
+          ]);
+
+        setStats(statsRes.data);
+        setSalesData(salesRes.data);
+        setRecentActivity(activityRes.data);
+        setClientStatusData(clientStatusRes.data);
+      } catch (error: any) {
+        console.error(
+          "Erreur lors du chargement des données du dashboard :",
+          error
+        );
+        const message =
+          error.response?.data?.message ||
+          "Une erreur est survenue lors du chargement des données.";
+        Swal.fire("Erreur", message, "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllDashboardData();
+  }, []);
+
+  const kpiData: Kpi[] = stats
+    ? [
+        {
+          icon: <DollarSign size={24} className="text-sky-500" />,
+          title: "Revenu Total",
+          value: `${stats.revenue?.toLocaleString("fr-FR") || 0} €`,
+          growth: 23,
+          trend: "up",
+        },
+        {
+          icon: <ShoppingBag size={24} className="text-orange-500" />,
+          title: "Ventes Totales",
+          value: `${stats.sales || 0}`,
+          growth: 48.5,
+          trend: "up",
+        },
+        {
+          icon: <Users size={24} className="text-purple-500" />,
+          title: "Clients Actifs",
+          value: `${stats.clients || 0}`,
+          growth: 6,
+          trend: "up",
+        },
+      ]
+    : [];
+
+  const chartOptions = {
+    chart: {
+      id: "sales-overview-chart",
+      toolbar: { show: false },
+      background: "transparent",
     },
-    {
-      icon: <MessageSquare size={16} className="text-green-500" />,
-      text: "Nouveau message de support",
-      time: "Il y a 25 min",
+    xaxis: {
+      categories: salesData.map((d) =>
+        new Date(d.month).toLocaleString("fr-FR", { month: "short" })
+      ),
+      labels: { style: { colors: "#9ca3af" } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
-    {
-      icon: <Briefcase size={16} className="text-purple-500" />,
-      text: "Prospect converti en client",
-      time: "Il y a 1h",
+    yaxis: { labels: { style: { colors: "#9ca3af" } } },
+    stroke: { curve: "smooth", width: 2 },
+    fill: {
+      type: "gradient",
+      gradient: { shade: "dark", opacityFrom: 0.5, opacityTo: 0.1 },
     },
-    {
-      icon: <DollarSign size={16} className="text-yellow-500" />,
-      text: "Facture #12345 réglée",
-      time: "Hier",
-    },
-  ];
+    grid: { borderColor: "#374151" },
+    tooltip: { theme: "dark" },
+    colors: ["#8b5cf6"],
+    dataLabels: { enabled: false },
+  };
+
+  const chartSeries = [{ name: "Ventes", data: salesData.map((d) => d.total) }];
 
   return (
     <DashboardLayout>
@@ -74,7 +139,7 @@ const Dashboard = () => {
             Tableau de bord
           </h1>
           <div className="mt-2 sm:mt-0 text-sm text-text-secondary">
-            Mis à jour:{" "}
+            Mis à jour :{" "}
             {new Date().toLocaleDateString("fr-FR", {
               weekday: "long",
               day: "numeric",
@@ -83,65 +148,94 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="space-y-8">
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {kpiData.map((kpi, index) => (
-              <StatCard
-                key={index}
-                icon={kpi.icon}
-                title={kpi.title}
-                value={kpi.value}
-                growth={kpi.growth}
-                trend={kpi.trend}
-              />
-            ))}
-          </section>
+        {loading ? (
+          <div className="text-center py-10 text-text-secondary">
+            Chargement...
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {kpiData.map((kpi, index) => (
+                <StatCard key={index} {...kpi} />
+              ))}
+              {stats?.wonDeals && (
+                <StatCard
+                  icon={<Trophy size={24} className="text-yellow-500" />}
+                  title="Affaires Gagnées (ce mois)"
+                  value={`${stats.wonDeals.revenue.toLocaleString("fr-FR")} €`}
+                  growth={stats.wonDeals.growth}
+                  trend={stats.wonDeals.growth >= 0 ? "up" : "down"}
+                  subtitle={`${stats.wonDeals.count} affaires`}
+                />
+              )}
+            </section>
 
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-card p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-text-primary">
-                  Aperçu des Ventes
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-card p-6 rounded-lg shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-text-primary">
+                    {salesData.length > 0
+                      ? "Aperçu des Ventes"
+                      : "Répartition des Clients"}
+                  </h2>
+                  <select
+                    className="bg-bg text-text-primary text-sm rounded-md px-3 py-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                    aria-label="Période"
+                  >
+                    <option>12 derniers mois</option>
+                  </select>
+                </div>
+                <div className="w-full h-64">
+                  {salesData.length > 0 ? (
+                    <Chart
+                      options={chartOptions}
+                      series={chartSeries}
+                      type="area"
+                      height="100%"
+                    />
+                  ) : (
+                    <ClientStatusPieChart data={clientStatusData} />
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-card p-6 rounded-lg shadow">
+                <h2 className="text-lg font-semibold mb-4 text-text-primary">
+                  Activité Récente
                 </h2>
-                <select
-                  className="bg-bg text-text-primary text-sm rounded-md px-3 py-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Période"
-                >
-                  <option>Ce mois-ci</option>
-                  <option>7 derniers jours</option>
-                  <option>30 derniers jours</option>
-                </select>
+                <ul className="space-y-3">
+                  {recentActivity.length > 0 ? (
+                    recentActivity.map((activity, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="mt-0.5 mr-3">
+                          <MessageSquare size={16} className="text-blue-500" />
+                        </span>
+                        <div>
+                          <p className="text-sm text-text-primary">
+                            {activity.content}
+                          </p>
+                          <p className="text-xs text-text-secondary">
+                            Par {activity.userName} -{" "}
+                            {new Date(activity.date).toLocaleDateString(
+                              "fr-FR"
+                            )}
+                          </p>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <p className="text-sm text-text-secondary text-center py-4">
+                      Aucune activité récente.
+                    </p>
+                  )}
+                </ul>
+                <button className="mt-4 w-full text-center text-sm text-primary hover:opacity-80">
+                  Voir toute l'activité →
+                </button>
               </div>
-              <div className="w-full h-64">
-                <RevenueChart />
-              </div>
-            </div>
-
-            <div className="bg-card p-6 rounded-lg shadow">
-              <h2 className="text-lg font-semibold mb-4 text-text-primary">
-                Activité Récente
-              </h2>
-              <ul className="space-y-3">
-                {recentActivities.map((activity, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="mt-0.5 mr-3">{activity.icon}</span>
-                    <div>
-                      <p className="text-sm text-text-primary">
-                        {activity.text}
-                      </p>
-                      <p className="text-xs text-text-secondary">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <button className="mt-4 w-full text-center text-sm text-primary hover:opacity-80">
-                Voir toute l'activité →
-              </button>
-            </div>
-          </section>
-        </div>
+            </section>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

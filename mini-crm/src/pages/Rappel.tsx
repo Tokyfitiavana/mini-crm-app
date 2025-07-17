@@ -1,71 +1,34 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import {
-  Bell,
-  PlusCircle,
-  Calendar,
-  Tag,
-  CheckCircle,
-  Circle,
-} from "lucide-react";
+import { Bell, PlusCircle, Tag, CheckCircle, Circle, Trash2 } from "lucide-react";
+import Swal from "../utils/swal";
+import axios from "axios";
 
 type Rappel = {
   id: number;
   title: string;
   dueDate: Date;
-  clientName?: string;
+  clientName?: string | null;
   isCompleted: boolean;
 };
 
-const mockRappels: Rappel[] = [
-  {
-    id: 1,
-    title: "Appeler Jean Dupont pour le devis",
-    dueDate: new Date(),
-    clientName: "Jean Dupont",
-    isCompleted: false,
-  },
-  {
-    id: 2,
-    title: "Envoyer le contrat à Marie Curie",
-    dueDate: new Date(),
-    clientName: "Marie Curie",
-    isCompleted: true,
-  },
-  {
-    id: 3,
-    title: "Suivi prospect Louis Pasteur",
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-    clientName: "Louis Pasteur",
-    isCompleted: false,
-  },
-  {
-    id: 4,
-    title: "Préparer la présentation pour Tech Corp",
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 5)),
-    clientName: "Tech Corp",
-    isCompleted: false,
-  },
-  {
-    id: 5,
-    title: "Relancer le paiement de la facture #123",
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-    isCompleted: false,
-  },
-];
+type Client = {
+  id: number;
+  name: string;
+};
 
 const formatDateGroup = (date: Date): string => {
   const today = new Date();
   const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-
   today.setHours(0, 0, 0, 0);
+  tomorrow.setDate(today.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
+  const given = new Date(date);
+  given.setHours(0, 0, 0, 0);
 
-  if (date.getTime() === today.getTime()) return "Aujourd'hui";
-  if (date.getTime() === tomorrow.getTime()) return "Demain";
-  return date.toLocaleDateString("fr-FR", {
+  if (given.getTime() === today.getTime()) return "Aujourd'hui";
+  if (given.getTime() === tomorrow.getTime()) return "Demain";
+  return given.toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -73,36 +36,114 @@ const formatDateGroup = (date: Date): string => {
 };
 
 const Rappels = () => {
-  const [rappels, setRappels] = useState<Rappel[]>(mockRappels);
+  const [rappels, setRappels] = useState<Rappel[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [newRappelTitle, setNewRappelTitle] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
 
-  const handleAddRappel = (e: FormEvent) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const config = { headers: { 'Authorization': `Bearer ${token}` } };
+        
+        const [rappelsRes, clientsRes] = await Promise.all([
+          axios.get("http://localhost:3001/api/rappels", config),
+          axios.get("http://localhost:3001/api/clients", config)
+        ]);
+
+        setRappels(
+          rappelsRes.data.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            dueDate: new Date(r.due_date),
+            clientName: r.clientName,
+            isCompleted: !!r.is_completed,
+          }))
+        );
+        setClients(clientsRes.data);
+      } catch (err) {
+        console.error("Erreur lors du chargement des données", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleAddRappel = async (e: FormEvent) => {
     e.preventDefault();
     if (newRappelTitle.trim() === "") return;
-    const newRappel: Rappel = {
-      id: Date.now(),
-      title: newRappelTitle,
-      dueDate: new Date(),
-      isCompleted: false,
-    };
-    setRappels((prev) => [newRappel, ...prev]);
-    setNewRappelTitle("");
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const config = { headers: { 'Authorization': `Bearer ${token}` } };
+      
+      const dataToSubmit = {
+        title: newRappelTitle,
+        dueDate: new Date().toISOString().split("T")[0],
+        clientId: selectedClientId ? Number(selectedClientId) : null,
+      };
+
+      const response = await axios.post("http://localhost:3001/api/rappels", dataToSubmit, config);
+      const newRappelData = response.data;
+      
+      const newRappel: Rappel = {
+        id: newRappelData.id,
+        title: newRappelData.title,
+        dueDate: new Date(newRappelData.due_date),
+        clientName: clients.find(c => c.id === Number(selectedClientId))?.name || null,
+        isCompleted: false,
+      };
+
+      setRappels((prev) => [newRappel, ...prev]);
+      setNewRappelTitle("");
+      setSelectedClientId("");
+    } catch (err) {
+      Swal.fire('Erreur', "Le rappel n'a pas pu être ajouté.", 'error');
+    }
   };
-  const toggleRappel = (id: number) => {
-    setRappels((prev) =>
-      prev.map((rappel) =>
-        rappel.id === id
-          ? { ...rappel, isCompleted: !rappel.isCompleted }
-          : rappel
-      )
-    );
+
+  const toggleRappel = async (id: number) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const config = { headers: { 'Authorization': `Bearer ${token}` } };
+      await axios.put(`http://localhost:3001/api/rappels/${id}/toggle`, {}, config);
+      setRappels((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, isCompleted: !r.isCompleted } : r
+        )
+      );
+    } catch (err) {
+      Swal.fire('Erreur', "Le statut du rappel n'a pas pu être mis à jour.", 'error');
+    }
+  };
+
+  const handleDeleteRappel = async (id: number) => {
+    const result = await Swal.fire({
+      title: 'Êtes-vous sûr ?',
+      text: "Ce rappel sera supprimé définitivement.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Oui, supprimer !',
+      cancelButtonText: 'Annuler',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem('authToken');
+        await axios.delete(`http://localhost:3001/api/rappels/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setRappels(prev => prev.filter(r => r.id !== id));
+        Swal.fire('Supprimé !', 'Le rappel a été supprimé.', 'success');
+      } catch (err) {
+        Swal.fire('Erreur', 'Le rappel n\'a pas pu être supprimé.', 'error');
+      }
+    }
   };
 
   const groupedRappels = rappels.reduce((acc, rappel) => {
     const dateKey = formatDateGroup(rappel.dueDate);
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
+    if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(rappel);
     return acc;
   }, {} as Record<string, Rappel[]>);
@@ -121,82 +162,65 @@ const Rappels = () => {
           <h1 className="text-3xl font-bold text-text-primary">Rappels</h1>
         </div>
 
-        <form
-          onSubmit={handleAddRappel}
-          className="mb-8 flex items-center gap-2"
-        >
-          <PlusCircle size={24} className="text-text-secondary" />
-          <input
-            type="text"
-            value={newRappelTitle}
-            onChange={(e) => setNewRappelTitle(e.target.value)}
-            placeholder="Ajouter un nouveau rappel..."
-            className="w-full bg-transparent border-b-2 border-border focus:border-primary focus:outline-none py-2 text-lg text-text-primary transition-colors"
-          />
-          <button
-            type="submit"
-            className="bg-primary text-white py-2 px-4 rounded-lg hover:opacity-90 flex-shrink-0"
-          >
-            Ajouter
-          </button>
+        <form onSubmit={handleAddRappel} className="mb-8 p-4 bg-card rounded-lg shadow space-y-4">
+          <div className="flex items-center gap-2">
+            <PlusCircle size={24} className="text-text-secondary" />
+            <input
+              type="text"
+              value={newRappelTitle}
+              onChange={(e) => setNewRappelTitle(e.target.value)}
+              placeholder="Ajouter un nouveau rappel..."
+              className="w-full bg-transparent focus:outline-none py-2 text-lg text-text-primary"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <select
+              value={selectedClientId}
+              onChange={(e) => setSelectedClientId(e.target.value)}
+              className="bg-bg border border-border text-sm rounded-md px-3 py-1 outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">— Associer à un client (Optionnel) —</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="bg-primary text-white py-2 px-4 rounded-lg hover:opacity-90 flex-shrink-0">
+              Ajouter
+            </button>
+          </div>
         </form>
 
         <div className="space-y-6">
           {sortedGroupKeys.length > 0 ? (
             sortedGroupKeys.map((dateKey) => (
               <div key={dateKey}>
-                <h2 className="text-lg font-bold text-text-secondary mb-3 border-b border-border pb-2">
-                  {dateKey}
-                </h2>
+                <h2 className="text-lg font-bold text-text-secondary mb-3 border-b border-border pb-2">{dateKey}</h2>
                 <ul className="space-y-2">
                   {groupedRappels[dateKey].map((rappel) => (
-                    <li
-                      key={rappel.id}
-                      className="flex items-center justify-between bg-card p-4 rounded-lg shadow transition-opacity"
-                      style={{ opacity: rappel.isCompleted ? 0.5 : 1 }}
-                    >
+                    <li key={rappel.id} className="group flex items-center justify-between bg-card p-4 rounded-lg shadow">
                       <div className="flex items-center gap-4">
-                        <button
-                          onClick={() => toggleRappel(rappel.id)}
-                          className="flex-shrink-0"
-                        >
-                          {rappel.isCompleted ? (
-                            <CheckCircle size={24} className="text-green-500" />
-                          ) : (
-                            <Circle
-                              size={24}
-                              className="text-text-secondary hover:text-primary"
-                            />
-                          )}
+                        <button onClick={() => toggleRappel(rappel.id)} className="flex-shrink-0">
+                          {rappel.isCompleted ? <CheckCircle size={24} className="text-green-500" /> : <Circle size={24} className="text-text-secondary hover:text-primary" />}
                         </button>
                         <div>
-                          <p
-                            className={`text-text-primary ${
-                              rappel.isCompleted ? "line-through" : ""
-                            }`}
-                          >
-                            {rappel.title}
-                          </p>
+                          <p className={`text-text-primary ${rappel.isCompleted ? "line-through text-text-secondary" : ""}`}>{rappel.title}</p>
                           {rappel.clientName && (
-                            <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1">
-                              <Tag size={12} />
-                              <span>{rappel.clientName}</span>
-                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1"><Tag size={12} /><span>{rappel.clientName}</span></div>
                           )}
                         </div>
                       </div>
+                      <button onClick={() => handleDeleteRappel(rappel.id)} className="text-text-secondary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 size={18} />
+                      </button>
                     </li>
                   ))}
                 </ul>
               </div>
             ))
           ) : (
-            <div className="text-center py-10 text-text-secondary">
-              <p>Aucun rappel pour le moment.</p>
-              <p className="text-sm">
-                Utilisez le champ ci-dessus pour en ajouter un !
-              </p>
-            </div>
+            <div className="text-center py-10 text-text-secondary"><p>Aucun rappel pour le moment.</p><p className="text-sm">Utilisez le formulaire ci-dessus pour en ajouter un !</p></div>
           )}
         </div>
       </div>
