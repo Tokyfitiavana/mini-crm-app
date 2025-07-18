@@ -8,14 +8,11 @@ import {
 } from "@tanstack/react-table";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
-import {
-  PlusCircle,
-  ChevronLeft,
-  ChevronRight,
-  Edit,
-  Trash2,
-} from "lucide-react";
+import { PlusCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Swal from "../utils/swal";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import ActionMenu from "../components/ActionMenu";
 
 type Client = {
   id: number;
@@ -25,17 +22,26 @@ type Client = {
   phone?: string;
   status: "Actif" | "Inactif" | "Prospect";
   lastActivity: string;
+  assigned_to_user_id?: number;
 };
 
 const Clients = () => {
   const [data, setData] = useState<Client[]>([]);
   const navigate = useNavigate();
+  const { isAdmin, user, token } = useAuth();
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/clients")
-      .then((res) => res.json())
-      .then((clients) => {
-        const formatted = clients.map((client: any) => ({
+    if (!token) return;
+
+    const fetchClients = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const response = await axios.get(
+          "http://localhost:3001/api/clients",
+          config
+        );
+
+        const formatted = response.data.map((client: any) => ({
           id: client.id,
           name: client.name,
           company: client.company,
@@ -43,13 +49,15 @@ const Clients = () => {
           phone: client.phone,
           status: client.status,
           lastActivity: new Date(client.created_at).toLocaleDateString("fr-FR"),
+          assigned_to_user_id: client.assigned_to_user_id,
         }));
         setData(formatted);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Erreur lors du chargement des clients :", error);
-      });
-  }, []);
+      }
+    };
+    fetchClients();
+  }, [token]);
 
   const handleDelete = (client: Client) => {
     Swal.fire({
@@ -59,19 +67,21 @@ const Clients = () => {
       showCancelButton: true,
       confirmButtonText: "Oui, supprimer !",
       cancelButtonText: "Annuler",
-      reverseButtons: true,
     }).then((result) => {
       if (result.isConfirmed) {
-        fetch(`http://localhost:3001/api/clients/${client.id}`, {
-          method: "DELETE",
-        })
-          .then((res) => {
-            if (!res.ok) throw new Error("Échec de la suppression");
+        axios
+          .delete(`http://localhost:3001/api/clients/${client.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .then(() => {
             setData((prev) => prev.filter((c) => c.id !== client.id));
             Swal.fire("Supprimé !", "Le client a été supprimé.", "success");
           })
-          .catch(() => {
-            Swal.fire("Erreur", "Impossible de supprimer le client.", "error");
+          .catch((error) => {
+            const message =
+              error.response?.data?.message ||
+              "Impossible de supprimer le client.";
+            Swal.fire("Erreur", message, "error");
           });
       }
     });
@@ -129,28 +139,25 @@ const Clients = () => {
         header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => {
           const client = row.original;
+          const canEdit = isAdmin || client.assigned_to_user_id === user?.id;
+          const canDelete = isAdmin;
+
           return (
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => navigate(`/clients/modifier/${client.id}`)}
-                className="flex items-center gap-1 text-sm px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-                title="Modifier"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleDelete(client)}
-                className="flex items-center gap-1 text-sm px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md"
-                title="Supprimer"
-              >
-                <Trash2 size={16} />
-              </button>
+            <div className="flex justify-end">
+              <ActionMenu
+                onEdit={
+                  canEdit
+                    ? () => navigate(`/clients/modifier/${client.id}`)
+                    : undefined
+                }
+                onDelete={canDelete ? () => handleDelete(client) : undefined}
+              />
             </div>
           );
         },
       },
     ],
-    [navigate]
+    [navigate, isAdmin, user?.id]
   );
 
   const table = useReactTable({
@@ -165,15 +172,16 @@ const Clients = () => {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-text-primary">Clients</h1>
-          <Link
-            to="/clients/nouveau"
-            className="flex items-center gap-2 bg-primary hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
-          >
-            <PlusCircle size={20} />
-            Ajouter un client
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/clients/nouveau"
+              className="flex items-center gap-2 bg-primary hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              <PlusCircle size={20} />
+              Ajouter un client
+            </Link>
+          )}
         </div>
-
         <div className="bg-card rounded-lg shadow overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-card/50">
@@ -212,7 +220,6 @@ const Clients = () => {
             </tbody>
           </table>
         </div>
-
         <div className="flex items-center justify-between mt-4 text-text-secondary">
           <div>
             Page{" "}

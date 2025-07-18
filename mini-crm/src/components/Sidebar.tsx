@@ -7,6 +7,7 @@ import {
   Settings,
   BarChartHorizontal,
 } from "lucide-react";
+import Logo from './Logo';
 
 const menuItems = [
   { name: "Tableau de bord", icon: Home, path: "/dashboard" },
@@ -19,8 +20,8 @@ const menuItems = [
 const Sidebar = () => {
   return (
     <aside className="w-64 bg-card text-text-primary flex flex-col h-screen border-r border-border">
-      <div className="text-2xl font-bold text-center py-6 border-b border-border text-primary">
-        Mini CRM
+      <div className="flex items-center justify-center h-20 border-b border-border">
+        <Logo />
       </div>
 
       <nav className="flex-1 px-4 py-6 space-y-2">

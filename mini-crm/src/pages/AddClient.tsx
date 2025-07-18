@@ -9,15 +9,13 @@ const AddClientPage = () => {
   const navigate = useNavigate();
 
   const handleFormSubmit = async (data: any) => {
-    console.log("Données du formulaire à envoyer :", data);
-
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
         Swal.fire({
           icon: "error",
           title: "Erreur",
-          text: "Vous n'êtes pas connecté.",
+          text: "Vous n'êtes pas connecté. Veuillez vous reconnecter.",
         });
         navigate("/login");
         return;
@@ -25,7 +23,7 @@ const AddClientPage = () => {
 
       const config = {
         headers: {
-          "x-auth-token": token,
+          "Authorization": `Bearer ${token}`,
         },
       };
 
@@ -42,9 +40,10 @@ const AddClientPage = () => {
       }).then(() => {
         navigate("/clients");
       });
+
     } catch (error: any) {
       const message =
-        error.response?.data?.message || "Une erreur est survenue.";
+        error.response?.data?.message || "Une erreur est survenue lors de l'ajout du client.";
       Swal.fire({
         icon: "error",
         title: "Échec de l'ajout",

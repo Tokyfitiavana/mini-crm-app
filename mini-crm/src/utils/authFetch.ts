@@ -1,4 +1,3 @@
-// src/utils/authFetch.ts
 export const authFetch = (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem("authToken");
     console.log("Token from localStorage:", token);

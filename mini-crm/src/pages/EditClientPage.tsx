@@ -1,60 +1,90 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import DashboardLayout from "../components/DashboardLayout";
 import ClientForm from "../components/ClientForm";
 import { ChevronLeft } from "lucide-react";
 import Swal from "../utils/swal";
+import { useAuth } from "../context/AuthContext";
+
+type ClientData = {
+  id: number;
+  name: string;
+  company?: string;
+  email: string;
+  phone?: string;
+  status: "Actif" | "Inactif" | "Prospect";
+  assigned_to_user_id?: number;
+};
 
 const EditClientPage = () => {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  const [clientData, setClientData] = useState<any>(null);
+  const { token } = useAuth();
+  const [clientData, setClientData] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!clientId) return;
-    fetch(`http://localhost:3001/api/clients/${clientId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Client introuvable");
-        return res.json();
-      })
-      .then((data) => setClientData(data))
-      .catch(() => setClientData(null))
-      .finally(() => setLoading(false));
-  }, [clientId]);
+    if (!clientId || !token) {
+      setLoading(false);
+      return;
+    }
 
-  const handleFormSubmit = (updatedData: any) => {
-    fetch(`http://localhost:3001/api/clients/${clientId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updatedData),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erreur de mise à jour");
-        Swal.fire({
-          icon: "success",
-          title: "Client modifié",
-          text: "Les informations du client ont été mises à jour avec succès.",
-          confirmButtonText: "Retour à la liste",
-        }).then(() => {
-          navigate("/clients");
-        });
-      })
-      .catch(() => {
-        Swal.fire({
-          icon: "error",
-          title: "Erreur",
-          text: "Échec de la modification du client.",
-        });
+    const fetchClientData = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const response = await axios.get(
+          `http://localhost:3001/api/clients/${clientId}`,
+          config
+        );
+        setClientData(response.data);
+      } catch (error) {
+        console.error("Erreur lors du chargement du client :", error);
+        setClientData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientData();
+  }, [clientId, token]);
+
+  const handleFormSubmit = async (updatedData: Partial<ClientData>) => {
+    try {
+      if (!token) throw new Error("Non authentifié");
+
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      await axios.put(
+        `http://localhost:3001/api/clients/${clientId}`,
+        updatedData,
+        config
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Client modifié",
+        text: "Les informations ont été mises à jour avec succès.",
+      }).then(() => {
+        navigate("/clients");
       });
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Échec de la modification du client.";
+      Swal.fire({
+        icon: "error",
+        title: "Erreur",
+        text: message,
+      });
+    }
   };
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="text-center p-10">Chargement en cours...</div>
+        <div className="text-center p-10 text-text-secondary">
+          Chargement...
+        </div>
       </DashboardLayout>
     );
   }
@@ -62,7 +92,17 @@ const EditClientPage = () => {
   if (!clientData) {
     return (
       <DashboardLayout>
-        <div className="text-center p-10">Client non trouvé.</div>
+        <div className="text-center p-10 text-text-secondary">
+          <p className="text-lg font-semibold">
+            Client non trouvé ou accès non autorisé.
+          </p>
+          <Link
+            to="/clients"
+            className="text-primary underline mt-4 inline-block"
+          >
+            Retourner à la liste
+          </Link>
+        </div>
       </DashboardLayout>
     );
   }

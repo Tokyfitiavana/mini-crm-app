@@ -23,7 +23,7 @@ const Login = () => {
       const { token, user } = response.data;
 
       localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify(user)); // Stocke aussi les infos de l'utilisateur
+      localStorage.setItem('user', JSON.stringify(user)); 
 
       await Swal.fire({
         icon: 'success',

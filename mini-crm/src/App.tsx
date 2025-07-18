@@ -11,40 +11,41 @@ import Rappels from "./pages/Rappel";
 import Parametres from "./pages/Parametres";
 import ClientDetailPage from "./pages/ClientDetailPage";
 import PipelinePage from "./pages/PipeLinePage";
-import PageLoader from "./components/PageLoader";
 
 function App() {
   const isAuthenticated = true;
 
   return (
-    <>
-      <PageLoader />
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route
-          path="/dashboard"
-          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/clients"
-          element={isAuthenticated ? <Clients /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/clients/nouveau"
-          element={isAuthenticated ? <AddClientPage /> : <Navigate to="/login" />}
-        />
-        <Route path="/clients/modifier/:clientId" element={<EditClientPage />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/rappels" element={<Rappels />} />
-        <Route path="/parametres" element={<Parametres />} />
-        <Route path="/clients/:clientId" element={<ClientDetailPage />} />
-        <Route path="/pipeline" element={<PipelinePage />} />
-      </Routes>
-    </>
+    <Routes>
+      {/* --- Routes Publiques --- */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+
+      {/* --- Routes Protégées --- */}
+      {isAuthenticated ? (
+        <>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/clients" element={<Clients />} />
+          
+          {/* Ordre corrigé : les plus spécifiques d'abord */}
+          <Route path="/clients/nouveau" element={<AddClientPage />} />
+          <Route path="/clients/modifier/:clientId" element={<EditClientPage />} />
+          <Route path="/clients/:clientId" element={<ClientDetailPage />} />
+          
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/rappels" element={<Rappels />} />
+          <Route path="/parametres" element={<Parametres />} />
+          <Route path="/pipeline" element={<PipelinePage />} />
+
+          {/* Redirection par défaut si l'utilisateur est connecté */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </>
+      ) : (
+        /* Redirection par défaut si l'utilisateur N'EST PAS connecté */
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      )}
+    </Routes>
   );
 }
-
 
 export default App;
