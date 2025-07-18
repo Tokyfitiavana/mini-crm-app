@@ -10,17 +10,15 @@ const interactionRoutes = require('./routes/interactions');
 const transactionRoutes = require('./routes/transactions');
 const rappelRoutes = require('./routes/rappels');
 const teamRoutes = require('./routes/team');
-const rolesRoutes = require('./routes/roles');
-const dashboardRoutes = require('./routes/dashboard'); // Corrigé pour la cohérence
-
-// --- Initialisation d'Express ---
+const rolesRoutes = require('./routes/Roles');
+const dashboardRoutes = require('./routes/dashboard'); 
 const app = express();
 
-// --- Middlewares ---
+
 app.use(cors());
 app.use(express.json());
 
-// --- Routes de l'API (avec des préfixes cohérents) ---
+
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/opportunities', opportunityRoutes);
@@ -29,14 +27,13 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/rappels', rappelRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/roles', rolesRoutes);
-app.use('/api/dashboard-stats', dashboardRoutes); // <-- CORRECTION PRINCIPALE
+app.use('/api/dashboard-stats', dashboardRoutes); 
 
-// --- Route de test ---
+
 app.get('/', (req, res) => {
   res.send('Serveur CRM est en ligne !');
 });
 
-// --- Démarrage du serveur ---
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Serveur écoute sur le port ${PORT}`);

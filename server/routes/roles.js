@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
-// GET tous les rôles
+
 router.get("/", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM roles");
@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST créer un rôle
+
 router.post("/", async (req, res) => {
   const { name, description } = req.body;
   try {
@@ -25,7 +25,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// DELETE un rôle
+
 router.delete("/:id", async (req, res) => {
   const roleId = req.params.id;
   try {

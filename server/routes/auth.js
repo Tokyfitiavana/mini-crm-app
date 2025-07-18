@@ -5,7 +5,7 @@ const router = express.Router();
 const db = require('../config/db');
 const auth = require('../middleware/auth');
 
-// ✅ Route : inscription
+
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -37,7 +37,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ Route : connexion
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -82,7 +82,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Route : récupérer les infos de l'utilisateur connecté
+
 router.get('/me', auth, async (req, res) => {
   try {
     const [rows] = await db.query(

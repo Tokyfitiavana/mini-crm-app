@@ -1,9 +1,7 @@
-// routes/team.js
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // ta connexion à la BDD
+const db = require('../config/db'); 
 
-// GET tous les membres
 router.get('/', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT id, name, email, role FROM users');
@@ -14,7 +12,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PATCH mise à jour rôle
 router.patch('/:id', async (req, res) => {
   const userId = req.params.id;
   const { role } = req.body;
