@@ -3,23 +3,37 @@ const router = express.Router();
 const db = require('../config/db');
 const auth = require('../middleware/auth');
 
-
 router.use(auth);
-
 
 router.get('/', async (req, res) => {
   const { id, role } = req.user;
+  const { search } = req.query;
 
   try {
-    let query = 'SELECT * FROM clients';
+    let query = `
+      SELECT c.*, u.name as assignedUserName 
+      FROM clients c
+      LEFT JOIN users u ON c.assigned_to_user_id = u.id
+    `;
     const params = [];
+    const whereClauses = [];
 
     if (role !== 'admin') {
-      query += ' WHERE assigned_to_user_id = ?';
+      whereClauses.push('c.assigned_to_user_id = ?');
       params.push(id);
     }
+
+    if (search) {
+      whereClauses.push('(c.name LIKE ? OR c.email LIKE ? OR c.company LIKE ?)');
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
     
-    query += ' ORDER BY name ASC';
+    query += ' ORDER BY c.name ASC';
     
     const [rows] = await db.query(query, params);
     res.json(rows);
@@ -63,11 +77,7 @@ router.post('/', async (req, res) => {
 
   try {
     const newClient = {
-      name,
-      email,
-      phone,
-      company,
-      status,
+      name, email, phone, company, status,
       assigned_to_user_id: (role === 'admin' && assigned_to_user_id) ? assigned_to_user_id : userId
     };
     const [result] = await db.query('INSERT INTO clients SET ?', newClient);
@@ -81,14 +91,20 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { name, email, phone, company, status, assigned_to_user_id } = req.body;
-  const { role } = req.user;
+  const { id: userId, role } = req.user;
   const clientId = req.params.id;
 
-  if (role !== 'admin') {
-      return res.status(403).json({ message: 'Action non autorisée.' });
-  }
-
   try {
+    if (role !== 'admin') {
+      const [clientRows] = await db.query('SELECT assigned_to_user_id FROM clients WHERE id = ?', [clientId]);
+      if (clientRows.length === 0 || clientRows[0].assigned_to_user_id !== userId) {
+        return res.status(403).json({ message: 'Action non autorisée. Ce client ne vous est pas assigné.' });
+      }
+      if (assigned_to_user_id && assigned_to_user_id !== userId) {
+        return res.status(403).json({ message: 'Vous ne pouvez pas réassigner ce client.' });
+      }
+    }
+
     const [result] = await db.query(
       'UPDATE clients SET name = ?, email = ?, phone = ?, company = ?, status = ?, assigned_to_user_id = ? WHERE id = ?',
       [name, email, phone, company, status, assigned_to_user_id, clientId]
