@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import ClientForm from "../components/ClientForm";
 import { ChevronLeft } from "lucide-react";
@@ -17,11 +18,17 @@ type ClientData = {
   assigned_to_user_id?: number;
 };
 
+type User = {
+  id: number;
+  name: string;
+};
+
 const EditClientPage = () => {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  const { token } = useAuth();
+  const { token, isAdmin } = useAuth();
   const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,34 +37,52 @@ const EditClientPage = () => {
       return;
     }
 
-    const fetchClientData = async () => {
+    const fetchData = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await axios.get(
+
+        const clientRequest = axios.get(
           `http://localhost:3001/api/clients/${clientId}`,
           config
         );
-        setClientData(response.data);
+        const requests = [clientRequest];
+
+        if (isAdmin) {
+          requests.push(axios.get("http://localhost:3001/api/team", config));
+        }
+
+        const responses = await Promise.all(requests);
+
+        setClientData(responses[0].data);
+        if (isAdmin && responses[1]) {
+          setUsers(responses[1].data);
+        }
       } catch (error) {
-        console.error("Erreur lors du chargement du client :", error);
+        console.error("Erreur lors du chargement des données :", error);
         setClientData(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchClientData();
-  }, [clientId, token]);
+    fetchData();
+  }, [clientId, token, isAdmin]);
 
-  const handleFormSubmit = async (updatedData: Partial<ClientData>) => {
+  const handleFormSubmit = async (data: any) => {
     try {
       if (!token) throw new Error("Non authentifié");
 
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const dataToSubmit = {
+        ...data,
+        assigned_to_user_id: data.assigned_to_user_id
+          ? Number(data.assigned_to_user_id)
+          : null,
+      };
 
+      const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(
         `http://localhost:3001/api/clients/${clientId}`,
-        updatedData,
+        dataToSubmit,
         config
       );
 
@@ -71,11 +96,7 @@ const EditClientPage = () => {
     } catch (error: any) {
       const message =
         error.response?.data?.message || "Échec de la modification du client.";
-      Swal.fire({
-        icon: "error",
-        title: "Erreur",
-        text: message,
-      });
+      Swal.fire({ icon: "error", title: "Erreur", text: message });
     }
   };
 
@@ -130,6 +151,7 @@ const EditClientPage = () => {
             onClose={() => navigate("/clients")}
             onSubmit={handleFormSubmit}
             initialData={clientData}
+            users={users}
           />
         </div>
       </div>
