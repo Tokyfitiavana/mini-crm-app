@@ -1,48 +1,40 @@
 .page-loader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(77, 106, 235, 0.658);
-  z-index: 9999;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  z-index: 9999;
 }
 
-.ripple-loader {
-  display: inline-block;
-  position: relative;
-  width: 80px;
-  height: 80px;
+.loader-bounce {
+  display: flex;
+  gap: 12px;
+  height: 64px;
 }
 
-.ripple-loader div {
-  position: absolute;
-  border: 4px solid #3498db;
-  opacity: 1;
+.loader-bounce div {
+  width: 16px;
+  height: 16px;
+  background: var(--color-primary);
   border-radius: 50%;
-  animation: ripple 1.2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  animation: bounce 0.6s infinite alternate;
 }
 
-.ripple-loader div:nth-child(2) {
-  animation-delay: -0.6s;
+.loader-bounce div:nth-child(2) {
+  animation-delay: 0.2s;
 }
 
-@keyframes ripple {
-  0% {
-    top: 36px;
-    left: 36px;
-    width: 0;
-    height: 0;
-    opacity: 1;
+.loader-bounce div:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  from {
+    transform: translateY(0);
   }
-  100% {
-    top: 0px;
-    left: 0px;
-    width: 72px;
-    height: 72px;
-    opacity: 0;
+  to {
+    transform: translateY(-24px);
   }
 }

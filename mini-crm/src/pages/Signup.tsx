@@ -1,12 +1,11 @@
-// src/pages/Signup.tsx
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "../utils/swal";
 import { Mail, Lock, User, UserPlus } from "lucide-react";
+import ApexLogo from "../components/Logo";
 
 const Signup = () => {
-  // Ajout du state pour le nom
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,9 +59,9 @@ const Signup = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-bg text-text-primary p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-center text-5xl font-extrabold text-text-secondary/20 mb-8 hidden sm:block">
-          CRÉER UN COMPTE
-        </h1>
+        <div className="mb-8 hidden sm:flex justify-center">
+          <ApexLogo className="scale-110" />
+        </div>
         <div className="bg-card rounded-xl shadow-lg overflow-hidden">
           <div className="flex">
             <Link

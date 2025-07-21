@@ -6,7 +6,6 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import AddClientPage from "./pages/AddClient";
 import EditClientPage from "./pages/EditClientPage";
-import Chat from "./pages/Chat";
 import Rappels from "./pages/Rappel";
 import Parametres from "./pages/Parametres";
 import ClientDetailPage from "./pages/ClientDetailPage";
@@ -17,31 +16,26 @@ function App() {
 
   return (
     <Routes>
-      {/* --- Routes Publiques --- */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
 
-      {/* --- Routes Protégées --- */}
       {isAuthenticated ? (
         <>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
           
-          {/* Ordre corrigé : les plus spécifiques d'abord */}
           <Route path="/clients/nouveau" element={<AddClientPage />} />
           <Route path="/clients/modifier/:clientId" element={<EditClientPage />} />
           <Route path="/clients/:clientId" element={<ClientDetailPage />} />
           
-          <Route path="/chat" element={<Chat />} />
           <Route path="/rappels" element={<Rappels />} />
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/pipeline" element={<PipelinePage />} />
 
-          {/* Redirection par défaut si l'utilisateur est connecté */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </>
       ) : (
-        /* Redirection par défaut si l'utilisateur N'EST PAS connecté */
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       )}
     </Routes>

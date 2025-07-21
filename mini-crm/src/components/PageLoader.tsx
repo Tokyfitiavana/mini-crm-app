@@ -14,7 +14,7 @@ const PageLoader = () => {
 
   return loading ? (
     <div className="page-loader">
-      <div className="ripple-loader">
+      <div className="loader-bounce">
         <div></div>
         <div></div>
       </div>
