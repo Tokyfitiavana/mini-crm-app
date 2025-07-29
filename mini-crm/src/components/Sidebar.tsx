@@ -6,6 +6,8 @@ import {
   MessageSquare,
   Settings,
   BarChartHorizontal,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
 import Logo from './Logo';
 
@@ -13,8 +15,10 @@ const menuItems = [
   { name: "Tableau de bord", icon: Home, path: "/dashboard" },
   { name: "Clients", icon: Users, path: "/clients" },
   { name: "Rappels", icon: Bell, path: "/rappels" },
-  { name: "Chat", icon: MessageSquare, path: "/chat" },
+  { name: "Stock", icon: Package, path: "/stock" },
+  { name: "Ventes", icon: ShoppingCart, path: "/sales" },
   { name: "Pipeline", icon: BarChartHorizontal, path: "/pipeline" },
+  { name: "Chat", icon: MessageSquare, path: "/chat" },
 ];
 
 const Sidebar = () => {

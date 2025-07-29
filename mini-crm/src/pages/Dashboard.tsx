@@ -5,13 +5,12 @@ import {
   Users,
   DollarSign,
   ShoppingBag,
-  TrendingUp,
   MessageSquare,
   Trophy,
 } from "lucide-react";
-import Chart from "react-apexcharts";
 import axios from "axios";
 import Swal from "../utils/swal";
+import ChartSerie from "../components/charts/ChartSerie";
 import ClientStatusPieChart from "../components/charts/ClientStatusPieChart";
 
 type Kpi = {
@@ -33,47 +32,42 @@ const Dashboard = () => {
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [clientStatusData, setClientStatusData] = useState<ClientStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
     const fetchAllDashboardData = async () => {
       try {
         const token = localStorage.getItem("authToken");
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-
+    
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+    
         const [statsRes, salesRes, activityRes, clientStatusRes] =
           await Promise.all([
-            axios.get("http://localhost:3001/api/dashboard-stats", config),
-            axios.get(
-              "http://localhost:3001/api/dashboard-stats/sales-overview",
-              config
-            ),
-            axios.get(
-              "http://localhost:3001/api/dashboard-stats/recent-activity",
-              config
-            ),
-            axios.get(
-              "http://localhost:3001/api/dashboard-stats/client-status-distribution",
-              config
-            ),
+            axios.get("http://localhost:3001/api/dashboard-stats", config), // protégée
+            axios.get("http://localhost:3001/api/dashboard-stats/sales-overview"), // non protégée
+            axios.get("http://localhost:3001/api/dashboard-stats/recent-activity", config), // protégée
+            axios.get("http://localhost:3001/api/dashboard-stats/client-status-distribution", config), // protégée
           ]);
-
+    
         setStats(statsRes.data);
         setSalesData(salesRes.data);
         setRecentActivity(activityRes.data);
         setClientStatusData(clientStatusRes.data);
       } catch (error: any) {
-        console.error(
-          "Erreur lors du chargement des données du dashboard :",
-          error
-        );
+        console.error("Erreur lors du chargement des données :", error);
         const message =
           error.response?.data?.message ||
-          "Une erreur est survenue lors du chargement des données.";
+          "Erreur lors du chargement du tableau de bord.";
         Swal.fire("Erreur", message, "error");
       } finally {
         setLoading(false);
       }
     };
+    
     fetchAllDashboardData();
   }, []);
 
@@ -104,11 +98,7 @@ const Dashboard = () => {
     : [];
 
   const chartOptions = {
-    chart: {
-      id: "sales-overview-chart",
-      toolbar: { show: false },
-      background: "transparent",
-    },
+    chart: { id: "sales-chart", toolbar: { show: false }, background: "transparent" },
     xaxis: {
       categories: salesData.map((d) =>
         new Date(d.month).toLocaleString("fr-FR", { month: "short" })
@@ -123,9 +113,9 @@ const Dashboard = () => {
       type: "gradient",
       gradient: { shade: "dark", opacityFrom: 0.5, opacityTo: 0.1 },
     },
-    grid: { borderColor: "#374151" },
     tooltip: { theme: "dark" },
-    colors: ["#8b5cf6"],
+    grid: { borderColor: "#374151" },
+    colors: ["#4f46e5"],
     dataLabels: { enabled: false },
   };
 
@@ -135,12 +125,9 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-          <h1 className="text-3xl font-bold text-text-primary">
-            Tableau de bord
-          </h1>
+          <h1 className="text-3xl font-bold text-text-primary">Tableau de bord</h1>
           <div className="mt-2 sm:mt-0 text-sm text-text-secondary">
-            Mis à jour :{" "}
-            {new Date().toLocaleDateString("fr-FR", {
+            Mis à jour : {new Date().toLocaleDateString("fr-FR", {
               weekday: "long",
               day: "numeric",
               month: "long",
@@ -150,7 +137,7 @@ const Dashboard = () => {
 
         {loading ? (
           <div className="text-center py-10 text-text-secondary">
-            Chargement...
+            Chargement des données...
           </div>
         ) : (
           <div className="space-y-8">
@@ -161,7 +148,7 @@ const Dashboard = () => {
               {stats?.wonDeals && (
                 <StatCard
                   icon={<Trophy size={24} className="text-yellow-500" />}
-                  title="Affaires Gagnées (ce mois)"
+                  title="Affaires Gagnées (mois)"
                   value={`${stats.wonDeals.revenue.toLocaleString("fr-FR")} €`}
                   growth={stats.wonDeals.growth}
                   trend={stats.wonDeals.growth >= 0 ? "up" : "down"}
@@ -171,68 +158,47 @@ const Dashboard = () => {
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-card p-6 rounded-lg shadow">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-text-primary">
-                    {salesData.length > 0
-                      ? "Aperçu des Ventes"
-                      : "Répartition des Clients"}
-                  </h2>
-                  <select
-                    className="bg-bg text-text-primary text-sm rounded-md px-3 py-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary"
-                    aria-label="Période"
-                  >
-                    <option>12 derniers mois</option>
-                  </select>
-                </div>
-                <div className="w-full h-64">
-                  {salesData.length > 0 ? (
-                    <Chart
-                      options={chartOptions}
-                      series={chartSeries}
-                      type="area"
-                      height="100%"
-                    />
-                  ) : (
-                    <ClientStatusPieChart data={clientStatusData} />
-                  )}
-                </div>
-              </div>
-
               <div className="bg-card p-6 rounded-lg shadow">
-                <h2 className="text-lg font-semibold mb-4 text-text-primary">
-                  Activité Récente
+                <h2 className="text-lg font-semibold text-text-primary mb-4">
+                  Statut des Clients
                 </h2>
-                <ul className="space-y-3">
-                  {recentActivity.length > 0 ? (
-                    recentActivity.map((activity, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="mt-0.5 mr-3">
-                          <MessageSquare size={16} className="text-blue-500" />
-                        </span>
-                        <div>
-                          <p className="text-sm text-text-primary">
-                            {activity.content}
-                          </p>
-                          <p className="text-xs text-text-secondary">
-                            Par {activity.userName} -{" "}
-                            {new Date(activity.date).toLocaleDateString(
-                              "fr-FR"
-                            )}
-                          </p>
-                        </div>
-                      </li>
-                    ))
-                  ) : (
-                    <p className="text-sm text-text-secondary text-center py-4">
-                      Aucune activité récente.
-                    </p>
-                  )}
-                </ul>
-                <button className="mt-4 w-full text-center text-sm text-primary hover:opacity-80">
-                  Voir toute l'activité →
-                </button>
+                <ClientStatusPieChart data={clientStatusData} />
               </div>
+              <div className="lg:col-span-2 bg-card p-6 rounded-lg shadow">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">
+                  Série des Ventes
+                </h2>
+                <ChartSerie salesData={salesData} />
+              </div>
+            </section>
+
+            <section className="bg-card p-6 rounded-lg shadow">
+              <h2 className="text-lg font-semibold mb-4 text-text-primary">
+                Activité Récente
+              </h2>
+              <ul className="space-y-3">
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((activity, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="mt-0.5 mr-3">
+                        <MessageSquare size={16} className="text-blue-500" />
+                      </span>
+                      <div>
+                        <p className="text-sm text-text-primary">
+                          {activity.content}
+                        </p>
+                        <p className="text-xs text-text-secondary">
+                          Par {activity.userName} – {new Date(activity.date).toLocaleDateString("fr-FR")}
+                        </p>
+                      </div>
+                    </li>
+                  ))
+                ) : (
+                  <p className="text-sm text-text-secondary text-center py-4">
+                    Aucune activité récente.
+                  </p>
+                )}
+              </ul>
             </section>
           </div>
         )}
