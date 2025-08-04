@@ -11,18 +11,21 @@ router.get("/", auth, async (req, res) => {
       clientsResult,
       opportunitiesResult,
       wonDealsResult,
+      salesSummaryResult, 
     ] = await Promise.all([
       db.query("SELECT SUM(amount) as totalRevenue FROM transactions"),
       db.query("SELECT COUNT(*) as totalSales FROM transactions"),
       db.query("SELECT COUNT(*) as activeClients FROM clients WHERE status = 'Actif'"),
       db.query("SELECT status FROM opportunities WHERE status IN ('Gagné', 'Perdu')"),
       db.query(`
-        SELECT 
-          SUM(CASE WHEN status = 'Gagné' AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE()) THEN value ELSE 0 END) as currentMonthRevenue,
-          COUNT(CASE WHEN status = 'Gagné' AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE()) THEN 1 END) as currentMonthDeals,
-          SUM(CASE WHEN status = 'Gagné' AND MONTH(created_at) = MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(created_at) = YEAR(CURDATE() - INTERVAL 1 MONTH) THEN value ELSE 0 END) as previousMonthRevenue
-        FROM opportunities
+      SELECT 
+      SUM(CASE WHEN status = 'Gagné' THEN value ELSE 0 END) as currentMonthRevenue,
+      COUNT(CASE WHEN status = 'Gagné' THEN 1 END) as currentMonthDeals,
+      0 as previousMonthRevenue
+    FROM opportunities
+    
       `),
+      db.query("SELECT COUNT(*) as salesCount, SUM(total_price) as salesTotal FROM sales"),
     ]);
 
     const totalRevenue = revenueResult[0][0].totalRevenue || 0;
@@ -49,6 +52,10 @@ router.get("/", auth, async (req, res) => {
       revenueGrowth = 100;
     }
 
+    const salesStats = salesSummaryResult[0][0];
+    const salesCount = salesStats.salesCount || 0;
+    const salesTotal = salesStats.salesTotal || 0;
+
     const stats = {
       revenue: totalRevenue,
       sales: totalSales,
@@ -59,6 +66,8 @@ router.get("/", auth, async (req, res) => {
         count: currentMonthDeals,
         growth: revenueGrowth.toFixed(1),
       },
+      salesCount: salesCount,
+      salesTotal: salesTotal,
     };
 
     res.json(stats);
@@ -67,7 +76,6 @@ router.get("/", auth, async (req, res) => {
     res.status(500).send("Erreur serveur");
   }
 });
-
 
 router.get("/sales-overview", async (req, res) => {
   try {

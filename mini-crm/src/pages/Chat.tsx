@@ -4,7 +4,6 @@ import { Send, Paperclip, Trash2 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import Swal from "sweetalert2";
 
-// Types
 type User = { id: number; name: string; avatar?: string };
 type Message = {
   id?: number;
@@ -305,7 +304,7 @@ const Chat = () => {
                     handleTyping();
                   }}
                   onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                  className="w-full bg-muted text-sm py-2 pl-10 pr-24 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full resize-none text-sm py-2 pl-10 pr-24 rounded-lg border border-border bg-gray-100 dark:bg-zinc-900 text-black dark:text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
                   <Paperclip className="text-muted-foreground" size={18} />

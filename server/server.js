@@ -16,6 +16,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const chatRoutes = require("./routes/chat");
 const productRoutes = require("./routes/products");
 const salesRoutes = require('./routes/sales');
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +36,7 @@ app.use('/api/dashboard-stats', dashboardRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/products", productRoutes);
 app.use('/api/sales', salesRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 app.get('/', (req, res) => {
   res.send('🚀 Serveur CRM + WebSocket prêt.');

@@ -43,6 +43,7 @@ router.post("/", async (req, res) => {
     console.error("Erreur dans POST /sales :", err);
     res.status(500).json({ error: err.message });
   }
+  
 });
 
 module.exports = router;

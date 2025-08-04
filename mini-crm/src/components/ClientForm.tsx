@@ -2,13 +2,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-// Define User type to match AddClientPage
 interface User {
   id: number;
   name: string;
 }
 
-// Update schema to include assigned_to_user_id
 const clientSchema = z.object({
   name: z
     .string()
@@ -23,7 +21,7 @@ const clientSchema = z.object({
     .optional()
     .or(z.literal("")),
   status: z.enum(["Prospect", "Actif", "Inactif"]),
-  assigned_to_user_id: z.number().optional().nullable(), // Optional user assignment
+  assigned_to_user_id: z.number().optional().nullable(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -32,7 +30,7 @@ interface ClientFormProps {
   onClose: () => void | Promise<void>;
   onSubmit: (data: ClientFormData) => Promise<void>;
   initialData?: Partial<ClientFormData>;
-  users: User[]; // Add users prop
+  users: User[]; 
 }
 
 const ClientForm = ({

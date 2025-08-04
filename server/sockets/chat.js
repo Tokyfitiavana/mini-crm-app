@@ -194,6 +194,39 @@ module.exports = (io) => {
         }
       });
 
+      socket.on("edit_message", async ({ conversationId, messageId, newText }) => {
+        try {
+          await db.query("UPDATE messages SET content = ? WHERE id = ?", [
+            newText,
+            messageId,
+          ]);
+      
+          
+          const [users] = await db.query(
+            "SELECT user_id FROM conversation_users WHERE conversation_id = ?",
+            [conversationId]
+          );
+          const recipient = connectedUsers.find(
+            (u) => u.id !== user.id && users.some((us) => us.user_id === u.id)
+          );
+          if (recipient) {
+            io.to(recipient.socketId).emit("message_edited", {
+              conversationId,
+              messageId,
+              newText,
+            });
+          }
+      
+          io.to(socket.id).emit("message_edited", {
+            conversationId,
+            messageId,
+            newText,
+          });
+        } catch (err) {
+          console.error("Erreur lors de la modification :", err.message);
+        }
+      });
+      
     } catch (err) {
       console.error("❌ Erreur d’authentification socket :", err.message);
       socket.disconnect();

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   Home,
@@ -9,7 +10,8 @@ import {
   Package,
   ShoppingCart,
 } from "lucide-react";
-import Logo from './Logo';
+import Logo from "./Logo";
+import IconLogo from "../assets/logos.png";
 
 const menuItems = [
   { name: "Tableau de bord", icon: Home, path: "/dashboard" },
@@ -22,13 +24,34 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    // Lire la valeur depuis le localStorage au chargement initial
+    const saved = localStorage.getItem("sidebar-collapsed");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Sauvegarder la valeur à chaque changement
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
+  }, [collapsed]);
+
   return (
-    <aside className="w-64 bg-card text-text-primary flex flex-col h-screen border-r border-border">
-      <div className="flex items-center justify-center h-20 border-b border-border">
-        <Logo />
+    <aside
+      className={`${
+        collapsed ? "w-20" : "w-64"
+      } bg-card text-text-primary flex flex-col h-screen border-r border-border transition-all duration-300`}
+    >
+      <div className="h-20 flex items-center justify-center border-b border-border overflow-hidden">
+        {collapsed ? (
+          <img src={IconLogo} alt="Logo réduit" className="h-8 w-auto" />
+        ) : (
+          <div className="px-4 w-full flex items-center justify-center">
+            <Logo className="h-10 w-auto max-h-16" />
+          </div>
+        )}
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-2 py-6 space-y-2">
         {menuItems.map(({ name, icon: Icon, path }) => (
           <NavLink
             key={path}
@@ -42,7 +65,7 @@ const Sidebar = () => {
             }
           >
             <Icon size={20} />
-            <span>{name}</span>
+            {!collapsed && <span>{name}</span>}
           </NavLink>
         ))}
       </nav>
@@ -59,8 +82,17 @@ const Sidebar = () => {
           }
         >
           <Settings size={20} />
-          <span>Paramètres</span>
+          {!collapsed && <span>Paramètres</span>}
         </NavLink>
+      </div>
+
+      <div className="px-4 py-4 border-t border-border">
+        <button
+          onClick={() => setCollapsed((prev) => !prev)}
+          className="w-full px-3 py-2 bg-surface hover:bg-bg border border-border rounded text-sm text-text-secondary"
+        >
+          {collapsed ? "▶ Déplier" : "◀ Réduire"}
+        </button>
       </div>
     </aside>
   );

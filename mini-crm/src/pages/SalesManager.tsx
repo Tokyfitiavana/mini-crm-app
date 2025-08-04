@@ -12,9 +12,9 @@ interface Product {
 interface Sale {
   id: number;
   product_id: number;
-  quantity: number; 
+  quantity: number;
   sale_date: string;
-  total_price: number;
+  total_price: number | string;
   product_name: string;
 }
 
@@ -23,19 +23,41 @@ const SalesManager = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<number>(0);
-  const [quantitySold, setQuantitySold] = useState<number>(1); 
+  const [quantitySold, setQuantitySold] = useState<number>(1);
+  const [search, setSearch] = useState<string>("");
+  const [filterPeriod, setFilterPeriod] = useState<string>("all");
+  const token = localStorage.getItem("authToken");
+  const userRole = localStorage.getItem("userRole");
 
   const fetchProducts = async () => {
-    const res = await fetch(`${API_BASE_URL}/api/products`);
-    const data = await res.json();
-    setProducts(data);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Unauthorized");
+      const data = await res.json();
+      if (Array.isArray(data)) setProducts(data);
+    } catch (error) {
+      console.error("Erreur fetchProducts:", error);
+    }
   };
 
   const fetchSales = async () => {
-    const res = await fetch(`${API_BASE_URL}/api/sales`);
-    const data = await res.json();
-    setSales(data);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/sales`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Unauthorized");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSales(data);
+        setFilteredSales(data);
+      }
+    } catch (error) {
+      console.error("Erreur fetchSales:", error);
+    }
   };
 
   useEffect(() => {
@@ -43,41 +65,61 @@ const SalesManager = () => {
     fetchSales();
   }, []);
 
+  useEffect(() => {
+    let filtered = [...sales];
+    if (search) {
+      filtered = filtered.filter((s) =>
+        s.product_name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    if (filterPeriod !== "all") {
+      const now = new Date();
+      filtered = filtered.filter((s) => {
+        const saleDate = new Date(s.sale_date);
+        if (filterPeriod === "today") {
+          return saleDate.toDateString() === now.toDateString();
+        } else if (filterPeriod === "week") {
+          const oneWeekAgo = new Date(now);
+          oneWeekAgo.setDate(now.getDate() - 7);
+          return saleDate >= oneWeekAgo;
+        } else if (filterPeriod === "month") {
+          return (
+            saleDate.getMonth() === now.getMonth() &&
+            saleDate.getFullYear() === now.getFullYear()
+          );
+        }
+        return true;
+      });
+    }
+    setFilteredSales(filtered);
+  }, [search, filterPeriod, sales]);
+
   const handleSale = async () => {
     const product = products.find((p) => p.id === selectedProductId);
     if (!product) return Swal.fire("Erreur", "Produit introuvable", "error");
-
     if (quantitySold <= 0 || quantitySold > product.quantity) {
-      return Swal.fire(
-        "Quantité invalide",
-        "Vérifiez que la quantité ne dépasse pas le stock",
-        "warning"
-      );
+      return Swal.fire("Quantité invalide", "Stock insuffisant", "warning");
     }
-
     const total_price = quantitySold * product.price;
-
     const result = await Swal.fire({
       title: "Confirmer la vente",
-      html: `Produit : <strong>${
-        product.name
-      }</strong><br/>Quantité : ${quantitySold}<br/>Total : <strong>${total_price.toFixed(
-        2
-      )} €</strong>`,
+      html: `Produit: <b>${product.name}</b><br/>Quantité: ${quantitySold}<br/>Total: <b>${total_price.toFixed(2)} €</b>`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Valider",
       cancelButtonText: "Annuler",
     });
-
     if (!result.isConfirmed) return;
 
     const res = await fetch(`${API_BASE_URL}/api/sales`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({
         product_id: selectedProductId,
-        quantity: quantitySold, 
+        quantity: quantitySold,
         total_price,
       }),
     });
@@ -88,58 +130,99 @@ const SalesManager = () => {
       await fetchProducts();
       await fetchSales();
     } else {
-      Swal.fire("Erreur", "Impossible d'enregistrer la vente", "error");
+      Swal.fire("Erreur", "Échec de l'enregistrement", "error");
     }
+  };
+
+  const exportCSV = () => {
+    const rows = [["Date", "Produit", "Quantité", "Total (€)"]];
+    filteredSales.forEach((s) => {
+      rows.push([
+        new Date(s.sale_date).toLocaleString("fr-FR"),
+        s.product_name,
+        s.quantity.toString(),
+        s.total_price ? Number(s.total_price).toFixed(2) : "0.00",
+      ]);
+    });
+    const csvContent = rows.map((e) => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", "ventes.csv");
+    link.click();
   };
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-8">
-        <h1 className="text-3xl font-bold text-gray-800">Gestion des ventes</h1>
-
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Enregistrer une vente
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(Number(e.target.value))}
-              className="border border-gray-300 rounded px-4 py-2"
-            >
-              <option value={0}>-- Choisir un produit --</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} (Stock: {product.quantity})
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              placeholder="Quantité vendue"
-              className="border border-gray-300 rounded px-4 py-2"
-              min={1}
-              value={quantitySold}
-              onChange={(e) => setQuantitySold(Number(e.target.value))}
-            />
-
-            <button
-              onClick={handleSale}
-              className="bg-green-600 text-white font-medium px-4 py-2 rounded hover:bg-green-700 transition"
-            >
-              Valider la vente
-            </button>
+        <h1 className="text-3xl font-bold text-text-primary">Gestion des ventes</h1>
+        {userRole === "admin" && (
+          <div className="bg-bg shadow-md rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Enregistrer une vente</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(Number(e.target.value))}
+                className="border border-border bg-bg text-text-primary rounded px-4 py-2"
+              >
+                <option value={0}>-- Choisir un produit --</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} (Stock: {product.quantity})
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="Quantité vendue"
+                className="border border-border bg-bg text-text-primary rounded px-4 py-2"
+                min={1}
+                value={quantitySold}
+                onChange={(e) => setQuantitySold(Number(e.target.value))}
+              />
+              <button
+                onClick={handleSale}
+                className="bg-primary text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-opacity-90"
+              >
+                Valider la vente
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Historique des ventes
-          </h2>
+        <div className="bg-bg shadow-md rounded-lg p-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+            <h2 className="text-xl font-semibold">Historique des ventes</h2>
+            <div className="flex flex-wrap gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Recherche produit..."
+                className="px-3 py-2 border border-border rounded text-sm bg-bg text-text-primary dark:bg-muted dark:text-white"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value)}
+                className="px-3 py-2 border border-border rounded text-sm bg-bg text-text-primary dark:bg-muted dark:text-white"
+              >
+                <option value="all">Toutes les périodes</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">7 derniers jours</option>
+                <option value="month">Ce mois-ci</option>
+              </select>
+              <button
+                onClick={exportCSV}
+                className="px-3 py-2 text-sm rounded bg-primary text-white hover:bg-opacity-90"
+              >
+                Export CSV
+              </button>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-left text-gray-600">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+            <table className="min-w-full text-sm text-left">
+              <thead className="text-xs text-text-secondary uppercase bg-surface">
                 <tr>
                   <th className="px-6 py-3">Date</th>
                   <th className="px-6 py-3">Produit</th>
@@ -148,26 +231,20 @@ const SalesManager = () => {
                 </tr>
               </thead>
               <tbody>
-                {sales.map((sale) => (
-                  <tr key={sale.id} className="border-b hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      {new Date(sale.sale_date).toLocaleString("fr-FR")}
-                    </td>
+                {filteredSales.map((sale) => (
+                  <tr key={sale.id} className="border-b border-border hover:bg-surface">
+                    <td className="px-6 py-4">{new Date(sale.sale_date).toLocaleString("fr-FR")}</td>
                     <td className="px-6 py-4">{sale.product_name}</td>
                     <td className="px-6 py-4">{sale.quantity}</td>
-                    <td className="px-6 py-4">
-                      {sale.total_price.toLocaleString("fr-FR")} €
-                    </td>
+                    <td className="px-6 py-4">{Number(sale.total_price).toLocaleString("fr-FR")} €</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {sales.length === 0 && (
-            <p className="text-center text-gray-500 mt-4">
-              Aucune vente enregistrée.
-            </p>
+          {filteredSales.length === 0 && (
+            <p className="text-center text-text-secondary mt-4">Aucune vente enregistrée.</p>
           )}
         </div>
       </div>

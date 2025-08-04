@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 
 router.use(auth);
 
+// Récupération des opportunités
 router.get('/', async (req, res) => {
   const { id, role } = req.user;
 
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
       query += ' WHERE c.assigned_to_user_id = ?';
       params.push(id);
     }
-    
+
     query += ' ORDER BY o.pipeline_order ASC';
 
     const [rows] = await db.query(query, params);
@@ -31,6 +32,7 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Création d'une opportunité
 router.post('/', async (req, res) => {
   const { title, value, status, client_id } = req.body;
   const { id: userId, role } = req.user;
@@ -41,10 +43,10 @@ router.post('/', async (req, res) => {
 
   try {
     if (role !== 'admin' && client_id) {
-        const [clientRows] = await db.query('SELECT assigned_to_user_id FROM clients WHERE id = ?', [client_id]);
-        if (clientRows.length === 0 || clientRows[0].assigned_to_user_id !== userId) {
-            return res.status(403).json({ message: "Vous n'êtes pas autorisé à créer une opportunité pour ce client." });
-        }
+      const [clientRows] = await db.query('SELECT assigned_to_user_id FROM clients WHERE id = ?', [client_id]);
+      if (clientRows.length === 0 || clientRows[0].assigned_to_user_id !== userId) {
+        return res.status(403).json({ message: "Vous n'êtes pas autorisé à créer une opportunité pour ce client." });
+      }
     }
 
     const [countResult] = await db.query('SELECT COUNT(*) as count FROM opportunities WHERE status = ?', [status]);
@@ -57,14 +59,14 @@ router.post('/', async (req, res) => {
       client_id: client_id || null,
       pipeline_order
     };
-    
+
     const [result] = await db.query('INSERT INTO opportunities SET ?', newOpportunity);
-    
+
     const [newOppRows] = await db.query(`
-        SELECT o.id, o.title, o.value, o.status, o.pipeline_order, c.name as clientName 
-        FROM opportunities o
-        LEFT JOIN clients c ON o.client_id = c.id
-        WHERE o.id = ?
+      SELECT o.id, o.title, o.value, o.status, o.pipeline_order, c.name as clientName 
+      FROM opportunities o
+      LEFT JOIN clients c ON o.client_id = c.id
+      WHERE o.id = ?
     `, [result.insertId]);
 
     res.status(201).json(newOppRows[0]);
@@ -75,13 +77,17 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Déplacement d'une opportunité (Drag & Drop)
 router.put('/:id/move', async (req, res) => {
   const { status, order } = req.body;
   const { id: oppId } = req.params;
   const { id: userId, role } = req.user;
 
-  if (!status || order === undefined) {
-    return res.status(400).json({ message: "Le nouveau statut et l'ordre sont requis." });
+  // Debug temporaire
+  console.log('Payload reçu pour déplacement :', req.body);
+
+  if (typeof status !== 'string' || typeof order !== 'number') {
+    return res.status(400).json({ message: "Le nouveau statut et l'ordre sont requis et doivent être valides." });
   }
 
   try {
@@ -102,7 +108,9 @@ router.put('/:id/move', async (req, res) => {
       'UPDATE opportunities SET status = ?, pipeline_order = ? WHERE id = ?',
       [status, order, oppId]
     );
+
     res.json({ message: 'Opportunité déplacée avec succès.' });
+
   } catch (err) {
     console.error(`Erreur [PUT /api/opportunities/${oppId}/move]:`, err.message);
     res.status(500).send('Erreur serveur');

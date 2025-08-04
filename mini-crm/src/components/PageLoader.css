@@ -1,40 +1,46 @@
 .page-loader {
   position: fixed;
   inset: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(102, 88, 88, 0.658);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  font-family: 'Poppins', sans-serif;
 }
 
-.loader-bounce {
-  display: flex;
-  gap: 12px;
-  height: 64px;
-}
-
-.loader-bounce div {
-  width: 16px;
-  height: 16px;
-  background: var(--color-primary);
-  border-radius: 50%;
-  animation: bounce 0.6s infinite alternate;
-}
-
-.loader-bounce div:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.loader-bounce div:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes bounce {
-  from {
-    transform: translateY(0);
+@media (prefers-color-scheme: dark) {
+  .page-loader {
+    background: rgba(20, 20, 20, 0.85);
   }
-  to {
-    transform: translateY(-24px);
-  }
+}
+
+.typewriter-loader h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--color-primary, #6366f1);
+  white-space: nowrap;
+  overflow: hidden;
+  width: 0;
+  animation: typing 1.2s steps(10, end) forwards;
+}
+
+.cursor-blink {
+  display: inline-block;
+  margin-left: 4px;
+  width: 10px;
+  height: 1.5rem;
+  background: #6366f1;
+  animation: blink 0.7s infinite;
+}
+
+@keyframes typing {
+  from { width: 0; }
+  to { width: 8ch; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }

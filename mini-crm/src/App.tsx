@@ -17,6 +17,9 @@ import SalesManager from "./pages/SalesManager";
 
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
+import NotificationsPage from "./pages/Notifications";
+
+
 
 function App() {
   const isAuthenticated = !!localStorage.getItem("authToken");
@@ -139,6 +142,7 @@ function App() {
           )
         }
       />
+      <Route path="/notifications" element={<NotificationsPage />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
