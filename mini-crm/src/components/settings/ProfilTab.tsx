@@ -6,35 +6,38 @@ const ProfilTab = () => {
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    // 🔐 Enregistrer dans l'API ici
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-gray-900 rounded-2xl shadow-lg p-6 space-y-6">
-      <h2 className="text-white text-xl font-semibold border-b pb-2">
+    <div className="max-w-lg mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 space-y-6">
+      <h2 className="text-gray-900 dark:text-white text-xl font-semibold border-b pb-2">
         👤 Profil Public
       </h2>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-300 mb-1">Nom complet</label>
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+            Nom complet
+          </label>
           <input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-purple-500"
+            className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-purple-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-300 mb-1">Adresse Email</label>
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+            Adresse Email
+          </label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-purple-500"
+            className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-purple-500"
           />
         </div>
       </div>
@@ -47,7 +50,9 @@ const ProfilTab = () => {
           Enregistrer
         </button>
         {saved && (
-          <p className="text-green-400 text-sm mt-2">✅ Modifications enregistrées</p>
+          <p className="text-green-600 dark:text-green-400 text-sm mt-2">
+            ✅ Modifications enregistrées
+          </p>
         )}
       </div>
     </div>

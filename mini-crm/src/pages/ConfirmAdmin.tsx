@@ -1,4 +1,3 @@
-// ConfirmAdmin.tsx
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -18,11 +17,26 @@ const ConfirmAdmin = () => {
 
     const confirmPromotion = async () => {
       try {
-        await axios.post("http://localhost:3001/api/team/confirm-admin", { token });
+        const authToken = localStorage.getItem("authToken"); // ou sessionStorage
+
+        await axios.post(
+          "http://localhost:3001/api/team/confirm-admin",
+          { token }, // 👈 token de confirmation dans le corps
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`, // 👈 token d'authentification ici
+            },
+          }
+        );
+
         Swal.fire("Succès", "Votre rôle a été mis à jour", "success");
-        navigate("/login"); // Redirection ou dashboard
+        navigate("/login");
       } catch (err: any) {
-        Swal.fire("Erreur", err.response?.data?.message || "Lien expiré", "error");
+        Swal.fire(
+          "Erreur",
+          err.response?.data?.message || "Lien expiré",
+          "error"
+        );
       } finally {
         setLoading(false);
       }

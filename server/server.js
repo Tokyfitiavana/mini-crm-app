@@ -17,7 +17,7 @@ const chatRoutes = require("./routes/chat");
 const productRoutes = require("./routes/products");
 const salesRoutes = require('./routes/sales');
 const notificationsRoutes = require('./routes/notifications');
-const authAdminOnly = require('./middleware/authAdminOnly');
+// const authAdminOnly = require('./middleware/authAdminOnly');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,9 +38,9 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/products", productRoutes);
 app.use('/api/sales', salesRoutes);
 app.use("/api/notifications", notificationsRoutes);
-app.use('/api/admin-only-data', authAdminOnly, (req, res) => {
-  res.send('Données réservées aux admins');
-});
+// app.use('/api/admin-only-data', authAdminOnly, (req, res) => {
+//   res.send('Données réservées aux admins');
+// });
 
 
 app.get('/', (req, res) => {

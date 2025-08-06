@@ -23,8 +23,10 @@ const Login = () => {
 
       const { token, user } = response.data;
 
+      // ✅ Stocker toutes les infos nécessaires
       localStorage.setItem("authToken", token);
       localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("userRole", user.role); // 👈 IMPORTANT pour afficher les fonctionnalités admin
 
       await Swal.fire({
         icon: "success",
@@ -55,14 +57,14 @@ const Login = () => {
         <div className="flex justify-center mb-6">
           <ApexLogo className="h-12 w-auto" />
         </div>
-  
+
         <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-white mb-1">
           Bienvenue 👋
         </h2>
         <p className="text-center text-sm text-gray-500 dark:text-text-secondary mb-6">
           Connectez-vous pour accéder à votre tableau de bord
         </p>
-  
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
@@ -84,7 +86,7 @@ const Login = () => {
               />
             </div>
           </div>
-  
+
           <div>
             <label
               htmlFor="password"
@@ -105,7 +107,7 @@ const Login = () => {
               />
             </div>
           </div>
-  
+
           <div className="text-right text-sm">
             <Link
               to="/mot-de-passe-oublie"
@@ -114,7 +116,7 @@ const Login = () => {
               Mot de passe oublié ?
             </Link>
           </div>
-  
+
           <button
             type="submit"
             disabled={isLoading}
@@ -129,7 +131,7 @@ const Login = () => {
             )}
           </button>
         </form>
-  
+
         <div className="mt-6 text-center text-sm text-gray-500">
           Pas encore de compte ?{" "}
           <Link
@@ -142,7 +144,6 @@ const Login = () => {
       </div>
     </div>
   );
-  
 };
 
 export default Login;

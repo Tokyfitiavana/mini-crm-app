@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
+
 router.get("/", async (req, res) => {
   try {
     const [results] = await db.query(
@@ -17,6 +18,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 router.post("/", async (req, res) => {
   const { product_id, quantity, total_price } = req.body;
 
@@ -25,14 +27,14 @@ router.post("/", async (req, res) => {
   }
 
   try {
-
+    
     await db.query(
       `INSERT INTO sales (product_id, quantity, total_price)
        VALUES (?, ?, ?)`,
       [product_id, quantity, total_price]
     );
 
-
+    
     await db.query(
       `UPDATE products SET quantity = quantity - ? WHERE id = ?`,
       [quantity, product_id]
@@ -43,7 +45,35 @@ router.post("/", async (req, res) => {
     console.error("Erreur dans POST /sales :", err);
     res.status(500).json({ error: err.message });
   }
-  
+});
+
+
+router.delete("/:id", async (req, res) => {
+  const saleId = req.params.id;
+
+  try {
+    
+    const [rows] = await db.query("SELECT * FROM sales WHERE id = ?", [saleId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Vente introuvable" });
+    }
+
+    const { product_id, quantity } = rows[0];
+
+    
+    await db.query("DELETE FROM sales WHERE id = ?", [saleId]);
+
+    
+    await db.query(
+      "UPDATE products SET quantity = quantity + ? WHERE id = ?",
+      [quantity, product_id]
+    );
+
+    res.json({ message: "Vente supprimée avec succès" });
+  } catch (err) {
+    console.error("Erreur dans DELETE /sales/:id :", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

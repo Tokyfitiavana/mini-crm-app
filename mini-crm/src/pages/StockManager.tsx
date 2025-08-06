@@ -26,13 +26,15 @@ const StockManager = () => {
     price: 0,
   });
   const [searchTerm, setSearchTerm] = useState("");
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
 
   const API_BASE_URL = "http://localhost:3001";
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
-    setUserRole(role);
+    if (role) {
+      setUserRole(role.toLowerCase().trim());
+    }
   }, []);
 
   const fetchProducts = async () => {
@@ -69,6 +71,15 @@ const StockManager = () => {
   }, []);
 
   const handleAddProduct = async () => {
+    if (!newProduct.name || newProduct.quantity <= 0 || newProduct.price <= 0) {
+      Swal.fire(
+        "Erreur",
+        "Veuillez remplir tous les champs avec des valeurs valides.",
+        "error"
+      );
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Confirmer l'ajout",
       text: "Voulez-vous vraiment ajouter ce produit ?",
@@ -140,9 +151,14 @@ const StockManager = () => {
       `,
       focusConfirm: false,
       preConfirm: () => {
-        const name = (document.getElementById("name") as HTMLInputElement).value;
-        const quantity = parseInt((document.getElementById("quantity") as HTMLInputElement).value);
-        const price = parseFloat((document.getElementById("price") as HTMLInputElement).value);
+        const name = (document.getElementById("name") as HTMLInputElement)
+          .value;
+        const quantity = parseInt(
+          (document.getElementById("quantity") as HTMLInputElement).value
+        );
+        const price = parseFloat(
+          (document.getElementById("price") as HTMLInputElement).value
+        );
         if (!name || isNaN(quantity) || isNaN(price)) {
           Swal.showValidationMessage("Tous les champs sont requis.");
           return;
@@ -158,14 +174,17 @@ const StockManager = () => {
 
     try {
       const token = localStorage.getItem("authToken");
-      const response = await fetch(`${API_BASE_URL}/api/products/${product.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formValues),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/products/${product.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formValues),
+        }
+      );
 
       if (!response.ok) throw new Error("Erreur lors de la modification");
 
@@ -176,14 +195,16 @@ const StockManager = () => {
     }
   };
 
-  const filteredProducts = products.filter(product =>
+  const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-8">
-        <h1 className="text-3xl font-bold text-text-primary">Gestion de Stock</h1>
+        <h1 className="text-3xl font-bold text-text-primary">
+          Gestion de Stock
+        </h1>
 
         <input
           type="text"
@@ -259,21 +280,34 @@ const StockManager = () => {
                     <th className="px-6 py-3">Nom</th>
                     <th className="px-6 py-3">Quantité</th>
                     <th className="px-6 py-3">Prix (€)</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
+                    {userRole === "admin" && (
+                      <th className="px-6 py-3 text-right">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProducts.map((product) => (
                     <tr key={product.id} className="border-b">
                       <td className="px-6 py-4">{product.name}</td>
-                      <td className={`px-6 py-4 ${product.quantity === 0 ? 'text-red-500' : product.quantity < 5 ? 'text-orange-500' : ''}`}>{product.quantity}</td>
+                      <td
+                        className={`px-6 py-4 ${
+                          product.quantity === 0
+                            ? "text-red-500"
+                            : product.quantity < 5
+                            ? "text-orange-500"
+                            : ""
+                        }`}
+                      >
+                        {product.quantity}
+                      </td>
                       <td className="px-6 py-4">
                         {typeof product.price === "number"
                           ? product.price.toFixed(2)
-                          : "0.00"} €
+                          : "0.00"}{" "}
+                        €
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        {userRole === "admin" && (
+                      {userRole === "admin" && (
+                        <td className="px-6 py-4 text-right">
                           <div className="flex justify-end items-center gap-2">
                             <button
                               onClick={() => handleEditProduct(product)}
@@ -290,8 +324,8 @@ const StockManager = () => {
                               <Trash2 size={18} />
                             </button>
                           </div>
-                        )}
-                      </td>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

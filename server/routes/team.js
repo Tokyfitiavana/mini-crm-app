@@ -4,6 +4,8 @@ const db = require("../config/db");
 const auth = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
+const authAdminOnly = require('../middleware/authAdminOnly');
+
 
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
@@ -90,7 +92,27 @@ router.post("/promote-admin", async (req, res) => {
     res.status(400).json({ message: "Lien invalide ou expiré" });
   }
 });
-router.put('/demote/:id', adminOnly, async (req, res) => {
+
+// ✅ Ne pas utiliser auth ici !
+router.post('/confirm-admin', async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    // 🔐 Vérifier le token (par exemple JWT ou un token signé en BDD)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const userId = decoded.id;
+
+    await db.query('UPDATE users SET role = ? WHERE id = ?', ['admin', userId]);
+
+    res.json({ message: "Rôle mis à jour avec succès." });
+  } catch (err) {
+    console.error(err);
+    res.status(403).json({ message: "Lien invalide ou expiré." });
+  }
+});
+
+router.put('/demote/:id', authAdminOnly, async (req, res) => {
   const userId = req.params.id;
 
   try {
