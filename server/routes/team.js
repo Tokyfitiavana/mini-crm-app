@@ -13,10 +13,10 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-// Protéger toutes les routes avec auth
+
 router.use(auth);
 
-// 🔹 Liste des membres de l’équipe
+
 router.get("/", adminOnly, async (req, res) => {
   try {
     const [rows] = await db.query("SELECT id, name, email, role FROM users");
@@ -26,7 +26,7 @@ router.get("/", adminOnly, async (req, res) => {
   }
 });
 
-// 🔹 Changer le rôle d’un utilisateur
+
 router.patch("/:id/role", adminOnly, async (req, res) => {
   const userId = req.params.id;
   const { role } = req.body;
@@ -46,7 +46,7 @@ router.patch("/:id/role", adminOnly, async (req, res) => {
   }
 });
 
-// 🔹 Invitation par email pour promotion
+
 router.post("/invite", adminOnly, async (req, res) => {
   const { name, email, role } = req.body;
 
@@ -72,7 +72,7 @@ router.post("/invite", adminOnly, async (req, res) => {
   }
 });
 
-// 🔹 Validation du lien d’invitation
+
 router.post("/promote-admin", async (req, res) => {
   const { token } = req.body;
   try {

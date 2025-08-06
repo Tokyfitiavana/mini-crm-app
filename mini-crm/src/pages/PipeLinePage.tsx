@@ -36,8 +36,8 @@ const PipelinePage = () => {
       try {
         const token = localStorage.getItem('authToken');
         const [oppsResponse, clientsResponse] = await Promise.all([
-          axios.get('http://localhost:3001/api/opportunities', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:3001/api/clients', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://192.168.0.19:3001/api/opportunities', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://192.168.0.19:3001/api/clients', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         const newColumns: Columns = {
@@ -85,7 +85,7 @@ const PipelinePage = () => {
 
     const token = localStorage.getItem('authToken');
     await axios.put(
-      `http://localhost:3001/api/opportunities/${draggableId}/move`,
+      `http://192.168.0.19:3001/api/opportunities/${draggableId}/move`,
       {
         status: destination.droppableId,
         order: destination.index,
@@ -102,7 +102,7 @@ const PipelinePage = () => {
         status: 'Nouveau',
         client_id: formData.client_id ? Number(formData.client_id) : null,
       };
-      const res = await axios.post<ApiOpportunity>('http://localhost:3001/api/opportunities', dataToSubmit, {
+      const res = await axios.post<ApiOpportunity>('http://192.168.0.19:3001/api/opportunities', dataToSubmit, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const newOpp = res.data;
@@ -139,7 +139,7 @@ const PipelinePage = () => {
     if (!confirm.isConfirmed) return;
 
     const token = localStorage.getItem('authToken');
-    await axios.delete(`http://localhost:3001/api/opportunities/${id}`, {
+    await axios.delete(`http://192.168.0.19:3001/api/opportunities/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setColumns(prev => {
@@ -185,29 +185,37 @@ const PipelinePage = () => {
                     <h2 className="font-semibold text-lg mb-2">
                       {col.title} ({col.opportunities.length})
                     </h2>
-                    {filtered(col.opportunities).map((opp, i) => (
-                      <Draggable key={opp.id} draggableId={opp.id} index={i}>
-                        {(prov) => (
-                          <div
-                            ref={prov.innerRef}
-                            {...prov.draggableProps}
-                            {...prov.dragHandleProps}
-                            className="border dark:border-gray-600 p-3 rounded mb-2 shadow-sm bg-white dark:bg-gray-700"
-                          >
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="font-semibold">{opp.title}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-300">{opp.clientName}</p>
-                                <p className="text-green-600 font-bold">{opp.value.toLocaleString()} €</p>
+
+                    {filtered(col.opportunities).length === 0 ? (
+                      <div className="text-gray-400 text-sm italic p-2">
+                        Aucune opportunité
+                      </div>
+                    ) : (
+                      filtered(col.opportunities).map((opp, i) => (
+                        <Draggable key={opp.id} draggableId={opp.id} index={i}>
+                          {(prov) => (
+                            <div
+                              ref={prov.innerRef}
+                              {...prov.draggableProps}
+                              {...prov.dragHandleProps}
+                              className="border dark:border-gray-600 p-3 rounded mb-2 shadow-sm bg-white dark:bg-gray-700"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-semibold">{opp.title}</p>
+                                  <p className="text-sm text-gray-500 dark:text-gray-300">{opp.clientName}</p>
+                                  <p className="text-green-600 font-bold">{opp.value.toLocaleString()} €</p>
+                                </div>
+                                <button onClick={() => deleteOpportunity(col.id, opp.id)} className="text-red-500 hover:text-red-700">
+                                  <Trash2 size={18} />
+                                </button>
                               </div>
-                              <button onClick={() => deleteOpportunity(col.id, opp.id)} className="text-red-500 hover:text-red-700">
-                                <Trash2 size={18} />
-                              </button>
                             </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
+                          )}
+                        </Draggable>
+                      ))
+                    )}
+
                     {provided.placeholder}
                   </div>
                 )}

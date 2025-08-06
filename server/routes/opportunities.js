@@ -117,4 +117,44 @@ router.put('/:id/move', async (req, res) => {
   }
 });
 
+// Suppression d'une opportunité
+router.delete('/:id', async (req, res) => {
+  const { id: oppId } = req.params;
+  const { id: userId, role } = req.user;
+
+  try {
+    // Vérifier que l'utilisateur a le droit de supprimer
+    if (role !== 'admin') {
+      const [oppRows] = await db.query(`
+        SELECT c.assigned_to_user_id 
+        FROM opportunities o 
+        LEFT JOIN clients c ON o.client_id = c.id 
+        WHERE o.id = ?
+      `, [oppId]);
+
+      if (oppRows.length === 0) {
+        return res.status(404).json({ message: "Opportunité non trouvée." });
+      }
+
+      if (oppRows[0].assigned_to_user_id !== userId) {
+        return res.status(403).json({ message: "Non autorisé à supprimer cette opportunité." });
+      }
+    }
+
+    // Supprimer l’opportunité
+    const [result] = await db.query('DELETE FROM opportunities WHERE id = ?', [oppId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Opportunité non trouvée." });
+    }
+
+    res.json({ message: 'Opportunité supprimée avec succès.' });
+
+  } catch (err) {
+    console.error(`Erreur [DELETE /api/opportunities/${oppId}]:`, err.message);
+    res.status(500).send('Erreur serveur');
+  }
+});
+
+
 module.exports = router;
