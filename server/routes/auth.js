@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const db = require('../config/db');
 const auth = require('../middleware/auth');
+const { forgotPassword, resetPassword } = require("../controllers/authController");
 
 
 router.post('/register', async (req, res) => {
@@ -114,5 +115,8 @@ router.put('/me', auth, async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la mise à jour.' });
   }
 });
+
+router.post("/forgot-password", forgotPassword); 
+router.post("/reset-password", resetPassword);
 
 module.exports = router;

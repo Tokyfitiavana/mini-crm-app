@@ -1,106 +1,55 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import Swal from "sweetalert2";
-
-interface UserType {
-  id: number;
-  name: string;
-  email: string;
-  role?: string;
-}
+import React, { useState } from "react";
 
 const ProfilTab = () => {
-  const [user, setUser] = useState<UserType | null>(null);
-  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("Toky Fitiavana");
+  const [email, setEmail] = useState("tokynantenaina3@gmail.com");
+  const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
-      setName(parsed.name);
-    }
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.put(
-        "http://localhost:3001/api/auth/me",
-        { name },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Mise à jour locale
-      localStorage.setItem("user", JSON.stringify(response.data));
-      setUser(response.data);
-
-      await Swal.fire({
-        icon: "success",
-        title: "Profil mis à jour",
-        text: "Votre nom a été modifié avec succès",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (error: any) {
-      console.error(error);
-      Swal.fire({
-        icon: "error",
-        title: "Erreur",
-        text: error.response?.data?.message || "Une erreur s'est produite",
-      });
-    }
+  const handleSave = () => {
+    // 🔐 Enregistrer dans l'API ici
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
-  if (!user) return <p>Chargement...</p>;
-
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-text-primary mb-6">
-        Profil Public
+    <div className="max-w-lg mx-auto bg-gray-900 rounded-2xl shadow-lg p-6 space-y-6">
+      <h2 className="text-white text-xl font-semibold border-b pb-2">
+        👤 Profil Public
       </h2>
-      <form className="space-y-6" onSubmit={handleSubmit}>
+
+      <div className="space-y-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-text-secondary">
-            Nom complet
-          </label>
+          <label className="block text-sm text-gray-300 mb-1">Nom complet</label>
           <input
             type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full bg-bg border border-border rounded-md p-2"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-purple-500"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-text-secondary">
-            Adresse Email
-          </label>
+          <label className="block text-sm text-gray-300 mb-1">Adresse Email</label>
           <input
             type="email"
-            id="email"
-            value={user.email}
-            disabled
-            className="mt-1 w-full bg-bg border border-border rounded-md p-2"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-purple-500"
           />
         </div>
+      </div>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-primary text-white py-2 px-4 rounded-lg"
-          >
-            Enregistrer
-          </button>
-        </div>
-      </form>
+      <div className="text-end">
+        <button
+          onClick={handleSave}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-lg transition"
+        >
+          Enregistrer
+        </button>
+        {saved && (
+          <p className="text-green-400 text-sm mt-2">✅ Modifications enregistrées</p>
+        )}
+      </div>
     </div>
   );
 };

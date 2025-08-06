@@ -4,12 +4,11 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  
+
   darkMode: 'class',
 
   theme: {
     extend: {
-
       colors: {
         'bg': 'var(--color-bg)',
         'card': 'var(--color-card)',
@@ -17,6 +16,15 @@ export default {
         'text-secondary': 'var(--color-text-secondary)',
         'border': 'var(--color-border)',
         'primary': 'var(--color-primary)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.5s ease-in-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },

@@ -16,6 +16,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.2",
+    "nodemailer": "^7.0.5",
     "react-avatar": "^5.0.4",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1"

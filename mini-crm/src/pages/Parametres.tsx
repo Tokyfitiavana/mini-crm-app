@@ -5,7 +5,6 @@ import { User, Shield, Palette, Bell, Users } from "lucide-react";
 import ProfilTab from "../components/settings/ProfilTab";
 import SecuriteTab from "../components/settings/SecuriteTab";
 import ApparenceTab from "../components/settings/ApparenceTab";
-import NotificationsTab from "../components/settings/NotificationsTab";
 import EquipeTab from "../components/settings/EquipeTab";
 
 const currentUserRole: "admin" | "user" = "admin";
@@ -24,12 +23,6 @@ const Parametres = () => {
     { id: "profil", label: "Profil", icon: User, forAdmin: false },
     { id: "securite", label: "Sécurité", icon: Shield, forAdmin: false },
     { id: "apparence", label: "Apparence", icon: Palette, forAdmin: false },
-    {
-      id: "notifications",
-      label: "Notifications",
-      icon: Bell,
-      forAdmin: false,
-    },
     { id: "equipe", label: "Équipe", icon: Users, forAdmin: true },
   ];
 
@@ -41,8 +34,6 @@ const Parametres = () => {
         return <SecuriteTab />;
       case "apparence":
         return <ApparenceTab />;
-      case "notifications":
-        return <NotificationsTab />;
       case "equipe":
         return currentUserRole === "admin" ? <EquipeTab /> : null;
       default:

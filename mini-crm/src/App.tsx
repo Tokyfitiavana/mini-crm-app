@@ -18,8 +18,9 @@ import SalesManager from "./pages/SalesManager";
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
 import NotificationsPage from "./pages/Notifications";
-
-
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import ConfirmAdmin from "./pages/ConfirmAdmin";
 
 function App() {
   const isAuthenticated = !!localStorage.getItem("authToken");
@@ -143,6 +144,9 @@ function App() {
         }
       />
       <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/confirm-admin" element={<ConfirmAdmin />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

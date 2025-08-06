@@ -17,6 +17,7 @@ const chatRoutes = require("./routes/chat");
 const productRoutes = require("./routes/products");
 const salesRoutes = require('./routes/sales');
 const notificationsRoutes = require('./routes/notifications');
+const authAdminOnly = require('./middleware/authAdminOnly');
 
 const app = express();
 const server = http.createServer(app);
@@ -37,6 +38,10 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/products", productRoutes);
 app.use('/api/sales', salesRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use('/api/admin-only-data', authAdminOnly, (req, res) => {
+  res.send('Données réservées aux admins');
+});
+
 
 app.get('/', (req, res) => {
   res.send('🚀 Serveur CRM + WebSocket prêt.');
@@ -54,6 +59,6 @@ const socketHandler = require('./sockets/chat');
 socketHandler(io);
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Serveur API + WebSocket actif sur http://localhost:${PORT}`);
 });
