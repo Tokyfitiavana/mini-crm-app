@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { Conversation, Message } = require("../models");
 
-// Créer une conversation entre deux utilisateurs
+
 router.post("/conversations", async (req, res) => {
   const { user1Id, user2Id } = req.body;
   try {
@@ -13,7 +13,7 @@ router.post("/conversations", async (req, res) => {
   }
 });
 
-// Envoyer un message à une conversation
+
 router.post("/messages", async (req, res) => {
   const { conversationId, sender, text } = req.body;
   try {
@@ -24,7 +24,7 @@ router.post("/messages", async (req, res) => {
   }
 });
 
-// Récupérer les messages d'une conversation
+
 router.get("/messages/:conversationId", async (req, res) => {
   try {
     const messages = await Conversation.getMessages(req.params.conversationId);

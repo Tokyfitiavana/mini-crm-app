@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import Swal from "../utils/swal";
-import { Trash } from "lucide-react";
+import { Trash, CheckCircle , FileDown} from "lucide-react";
 
 interface Product {
   id: number;
@@ -21,7 +21,6 @@ interface Sale {
 
 const SalesManager = () => {
   const API_BASE_URL = "http://localhost:3001";
-
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
@@ -31,7 +30,6 @@ const SalesManager = () => {
   const [filterPeriod, setFilterPeriod] = useState<string>("all");
   const [selectedSales, setSelectedSales] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-
   const token = localStorage.getItem("authToken");
   const userRole = localStorage.getItem("userRole");
 
@@ -118,7 +116,6 @@ const SalesManager = () => {
       cancelButtonText: "Annuler",
     });
     if (!result.isConfirmed) return;
-
     const res = await fetch(`${API_BASE_URL}/api/sales`, {
       method: "POST",
       headers: {
@@ -131,7 +128,6 @@ const SalesManager = () => {
         total_price,
       }),
     });
-
     if (res.ok) {
       Swal.fire("Succès", "Vente enregistrée", "success");
       setQuantitySold(1);
@@ -152,7 +148,6 @@ const SalesManager = () => {
       cancelButtonText: "Annuler",
     });
     if (!confirm.isConfirmed) return;
-
     for (const id of selectedSales) {
       await fetch(`${API_BASE_URL}/api/sales/${id}`, {
         method: "DELETE",
@@ -175,12 +170,10 @@ const SalesManager = () => {
       cancelButtonText: "Annuler",
     });
     if (!confirm.isConfirmed) return;
-
     await fetch(`${API_BASE_URL}/api/sales/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
-
     await fetchSales();
     Swal.fire("Supprimé", "La vente a été supprimée.", "success");
   };
@@ -220,7 +213,6 @@ const SalesManager = () => {
         <h1 className="text-3xl font-bold text-text-primary">
           Gestion des ventes
         </h1>
-        {/* Formulaire de vente */}
         {userRole === "admin" && (
           <div className="bg-bg shadow-md rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">
@@ -249,15 +241,14 @@ const SalesManager = () => {
               />
               <button
                 onClick={handleSale}
-                className="bg-primary text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-opacity-90"
+                className="bg-primary text-white text-sm font-medium w-[2cm] h-[1cm] rounded-md hover:bg-opacity-90 flex items-center justify-center"
+                title="Valider la vente"
               >
-                Valider la vente
+                <CheckCircle size={18} />
               </button>
             </div>
           </div>
         )}
-
-        {/* Historique des ventes */}
         <div className="bg-bg shadow-md rounded-lg p-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <h2 className="text-xl font-semibold">Historique des ventes</h2>
@@ -281,21 +272,23 @@ const SalesManager = () => {
               </select>
               <button
                 onClick={exportCSV}
-                className="px-3 py-2 text-sm rounded bg-primary text-white hover:bg-opacity-90"
+                className="w-[2cm] h-[1cm] rounded bg-primary text-white flex items-center justify-center"
+                title="Exporter en CSV"
               >
-                Export CSV
+                <FileDown size={18} />
               </button>
+
               {userRole === "admin" && selectedSales.length > 0 && (
                 <button
                   onClick={handleDeleteSelected}
-                  className="px-3 py-2 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+                  className="w-[2cm] h-[1cm] rounded bg-red-600 text-white flex items-center justify-center"
+                  title="Supprimer la sélection"
                 >
-                  Supprimer sélection
+                  <Trash size={18} />
                 </button>
               )}
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-left">
               <thead className="text-xs text-text-secondary uppercase bg-surface">
@@ -349,7 +342,6 @@ const SalesManager = () => {
               </tbody>
             </table>
           </div>
-
           {filteredSales.length === 0 && (
             <p className="text-center text-text-secondary mt-4">
               Aucune vente enregistrée.

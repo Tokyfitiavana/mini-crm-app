@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { CheckCircle , Trash, Pencil } from "lucide-react";
 import Swal from "../utils/swal";
 
 interface Product {
@@ -255,9 +255,10 @@ const StockManager = () => {
               />
               <button
                 onClick={handleAddProduct}
-                className="flex items-center gap-2 bg-primary text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-opacity-90 transition"
+                className="bg-primary text-white text-sm font-medium w-[2cm] h-[1cm] rounded-md hover:bg-opacity-90 flex items-center justify-center"
+                title="Valider la vente"
               >
-                <Plus size={16} /> Ajouter
+                <CheckCircle size={18} />
               </button>
             </div>
           </div>
@@ -321,7 +322,7 @@ const StockManager = () => {
                               className="p-2 text-red-600 hover:bg-red-100 rounded"
                               title="Supprimer"
                             >
-                              <Trash2 size={18} />
+                              <Trash size={18} />
                             </button>
                           </div>
                         </td>

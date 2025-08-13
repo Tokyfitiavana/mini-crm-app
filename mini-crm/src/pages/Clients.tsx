@@ -280,9 +280,11 @@ const Clients = () => {
             {isAdmin && (
               <Link
                 to="/clients/nouveau"
-                className="flex items-center gap-2 bg-primary hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
+                className="bg-primary text-white w-[2cm] h-[1cm] rounded-md flex items-center justify-center transition-all duration-200"
+                title="Ajouter un client"
               >
-                <PlusCircle size={20} /> Ajouter un client
+                <PlusCircle size={18} />
+                <span className="sr-only">Ajouter un client</span>
               </Link>
             )}
           </div>

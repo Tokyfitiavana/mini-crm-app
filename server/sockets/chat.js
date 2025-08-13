@@ -6,33 +6,26 @@ let connectedUsers = [];
 module.exports = (io) => {
   io.on("connection", async (socket) => {
     const token = socket.handshake.auth?.token;
-    if (!token) {
-      console.error("❌ Token manquant");
-      return socket.disconnect();
-    }
+    if (!token) return socket.disconnect();
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const userId = decoded.user?.id;
+      const userId = decoded?.user?.id;
+      if (!userId) return socket.disconnect();
 
-      if (!userId) {
-        console.error("❌ ID utilisateur non trouvé dans le token :", decoded);
-        return socket.disconnect();
-      }
-
-      const [userRows] = await db.query("SELECT id, name, avatar FROM users WHERE id = ?", [userId]);
-      if (userRows.length === 0) {
-        console.error("❌ Utilisateur non trouvé dans la base :", userId);
-        return socket.disconnect();
-      }
+      const [userRows] = await db.query(
+        "SELECT id, name, avatar FROM users WHERE id = ?",
+        [userId]
+      );
+      if (userRows.length === 0) return socket.disconnect();
 
       const user = userRows[0];
-      console.log("✅ Utilisateur connecté :", user);
 
       connectedUsers = connectedUsers.filter((u) => u.id !== user.id);
       connectedUsers.push({ ...user, socketId: socket.id });
       io.emit("users_list", connectedUsers);
 
+      // ——— Charger les conversations existantes + pièces jointes ———
       const [existingConvos] = await db.query(
         `SELECT c.id AS conversationId, u.id AS userId, u.name, u.avatar
          FROM conversations c
@@ -45,7 +38,15 @@ module.exports = (io) => {
       const formattedConversations = [];
       for (const row of existingConvos) {
         const [messages] = await db.query(
-          `SELECT id, sender_id, content AS text, created_at AS timestamp
+          `SELECT 
+             id,
+             sender_id,
+             content                  AS text,
+             attachment_url           AS a_url,
+             attachment_name          AS a_name,
+             attachment_mime          AS a_mime,
+             attachment_size          AS a_size,
+             created_at               AS timestamp
            FROM messages
            WHERE conversation_id = ?
            ORDER BY created_at ASC`,
@@ -54,33 +55,34 @@ module.exports = (io) => {
 
         const formattedMessages = messages.map((m) => ({
           id: m.id,
-          text: m.text,
+          text: m.text ?? "",
           sender: m.sender_id === user.id ? "me" : "other",
-          timestamp: new Date(m.timestamp).toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          timestamp: new Date(m.timestamp).toISOString(), // ISO, le front normalise/affiche
+          attachment:
+            m.a_url
+              ? {
+                  url: m.a_url,          // laisser relatif (ex: /uploads/xxx) — le front le met en absolu
+                  name: m.a_name || "",
+                  mime: m.a_mime || "",
+                  size: m.a_size || 0,
+                }
+              : null,
         }));
 
         formattedConversations.push({
           id: row.conversationId,
-          user: {
-            id: row.userId,
-            name: row.name,
-            avatar: row.avatar,
-          },
+          user: { id: row.userId, name: row.name, avatar: row.avatar },
           messages: formattedMessages,
         });
       }
-
       socket.emit("existing_conversations", formattedConversations);
 
       socket.on("disconnect", () => {
         connectedUsers = connectedUsers.filter((u) => u.socketId !== socket.id);
         io.emit("users_list", connectedUsers);
-        console.log("❎ Déconnexion :", user.name);
       });
 
+      // ——— Démarrer/ouvrir une conversation ———
       socket.on("start_conversation", async ({ user1Id, user2Id }) => {
         const [existing] = await db.query(
           `SELECT c.id FROM conversations c
@@ -101,21 +103,39 @@ module.exports = (io) => {
           );
         }
 
-        const [user2Rows] = await db.query("SELECT id, name, avatar FROM users WHERE id = ?", [user2Id]);
+        const [user2Rows] = await db.query(
+          "SELECT id, name, avatar FROM users WHERE id = ?",
+          [user2Id]
+        );
         const [messages] = await db.query(
-          `SELECT id, sender_id, content AS text, created_at AS timestamp
-           FROM messages WHERE conversation_id = ? ORDER BY created_at ASC`,
+          `SELECT 
+             id,
+             sender_id,
+             content AS text,
+             attachment_url AS a_url,
+             attachment_name AS a_name,
+             attachment_mime AS a_mime,
+             attachment_size AS a_size,
+             created_at AS timestamp
+           FROM messages
+           WHERE conversation_id = ?
+           ORDER BY created_at ASC`,
           [conversationId]
         );
 
         const formattedMessages = messages.map((m) => ({
           id: m.id,
-          text: m.text,
+          text: m.text ?? "",
           sender: m.sender_id === user1Id ? "me" : "other",
-          timestamp: new Date(m.timestamp).toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          timestamp: new Date(m.timestamp).toISOString(),
+          attachment: m.a_url
+            ? {
+                url: m.a_url,
+                name: m.a_name || "",
+                mime: m.a_mime || "",
+                size: m.a_size || 0,
+              }
+            : null,
         }));
 
         socket.emit("conversation_started", {
@@ -125,23 +145,42 @@ module.exports = (io) => {
         });
       });
 
+      // ——— Envoyer un message (texte et/ou pièce jointe) ———
       socket.on("send_message", async ({ conversationId, message }) => {
         const sender = connectedUsers.find((u) => u.socketId === socket.id);
         if (!sender) return;
 
+        const text = (message?.text ?? "").toString(); // toujours une string ('' si vide)
+        const att = message?.attachment || null;
+
         const [msgRes] = await db.query(
-          "INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)",
-          [conversationId, sender.id, message.text]
+          `INSERT INTO messages
+           (conversation_id, sender_id, content, attachment_url, attachment_name, attachment_mime, attachment_size)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            conversationId,
+            sender.id,
+            text,                               // <= JAMAIS NULL
+            att?.url || null,
+            att?.name || null,
+            att?.mime || null,
+            att?.size ?? null,
+          ]
         );
 
-        const newMessage = {
+        const outMessage = {
           id: msgRes.insertId,
-          text: message.text,
-          sender: "other",
-          timestamp: new Date().toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          text,
+          sender: "other",                      // pour le destinataire, c'est "other"
+          timestamp: new Date().toISOString(),
+          attachment: att
+            ? {
+                url: att.url,
+                name: att.name || "",
+                mime: att.mime || "",
+                size: att.size || 0,
+              }
+            : null,
         };
 
         const [usersInConvo] = await db.query(
@@ -155,9 +194,12 @@ module.exports = (io) => {
         if (recipientSocket) {
           io.to(recipientSocket.socketId).emit("receive_message", {
             conversationId,
-            message: newMessage,
+            message: outMessage,
           });
         }
+
+        // On peut aussi accuser réception à l’émetteur si besoin :
+        // io.to(socket.id).emit("message_sent", { conversationId, messageId: msgRes.insertId });
       });
 
       socket.on("typing", ({ conversationId }) => {
@@ -178,7 +220,7 @@ module.exports = (io) => {
           await db.query("DELETE FROM messages WHERE id = ?", [messageId]);
           io.to(socket.id).emit("message_deleted", { messageId, conversationId });
         } catch (err) {
-          console.error("❌ Erreur lors de la suppression du message :", err.message);
+          console.error("❌ delete_message:", err.message);
         }
       });
 
@@ -187,21 +229,19 @@ module.exports = (io) => {
           await db.query("DELETE FROM messages WHERE conversation_id = ?", [conversationId]);
           await db.query("DELETE FROM conversation_users WHERE conversation_id = ?", [conversationId]);
           await db.query("DELETE FROM conversations WHERE id = ?", [conversationId]);
-
           io.to(socket.id).emit("conversation_deleted", { conversationId });
         } catch (err) {
-          console.error("❌ Erreur lors de la suppression de la conversation :", err.message);
+          console.error("❌ delete_conversation:", err.message);
         }
       });
 
       socket.on("edit_message", async ({ conversationId, messageId, newText }) => {
         try {
           await db.query("UPDATE messages SET content = ? WHERE id = ?", [
-            newText,
+            (newText ?? "").toString(),
             messageId,
           ]);
-      
-          
+
           const [users] = await db.query(
             "SELECT user_id FROM conversation_users WHERE conversation_id = ?",
             [conversationId]
@@ -213,22 +253,21 @@ module.exports = (io) => {
             io.to(recipient.socketId).emit("message_edited", {
               conversationId,
               messageId,
-              newText,
+              newText: (newText ?? "").toString(),
             });
           }
-      
+
           io.to(socket.id).emit("message_edited", {
             conversationId,
             messageId,
-            newText,
+            newText: (newText ?? "").toString(),
           });
         } catch (err) {
-          console.error("Erreur lors de la modification :", err.message);
+          console.error("❌ edit_message:", err.message);
         }
       });
-      
     } catch (err) {
-      console.error("❌ Erreur d’authentification socket :", err.message);
+      console.error("❌ Auth socket :", err.message);
       socket.disconnect();
     }
   });

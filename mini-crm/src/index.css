@@ -34,3 +34,25 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Scroll calé à droite et discret pour la zone messages */
+.scroll-pane {
+  scrollbar-gutter: stable;
+}
+
+.scroll-pane::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scroll-pane::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35); /* slate-400/35 */
+  border-radius: 9999px;
+}
+
+.scroll-pane:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+}
+
+.scroll-pane::-webkit-scrollbar-track {
+  background: transparent;
+}

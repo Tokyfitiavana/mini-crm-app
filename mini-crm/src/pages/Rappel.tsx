@@ -1,5 +1,3 @@
-// Version améliorée de la page Rappels avec : sélection de date, champ de recherche, filtre terminé/non terminé
-
 import { useEffect, useState, type FormEvent } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import {
@@ -94,13 +92,18 @@ const Rappels = () => {
         dueDate: selectedDate || new Date().toISOString().split("T")[0],
         clientId: selectedClientId ? Number(selectedClientId) : null,
       };
-      const response = await axios.post("http://localhost:3001/api/rappels", dataToSubmit, config);
+      const response = await axios.post(
+        "http://localhost:3001/api/rappels",
+        dataToSubmit,
+        config
+      );
       const newRappelData = response.data;
       const newRappel: Rappel = {
         id: newRappelData.id,
         title: newRappelData.title,
         dueDate: new Date(newRappelData.due_date),
-        clientName: clients.find((c) => c.id === Number(selectedClientId))?.name || null,
+        clientName:
+          clients.find((c) => c.id === Number(selectedClientId))?.name || null,
         isCompleted: false,
       };
       setRappels((prev) => [newRappel, ...prev]);
@@ -116,10 +119,22 @@ const Rappels = () => {
     try {
       const token = localStorage.getItem("authToken");
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`http://localhost:3001/api/rappels/${id}/toggle`, {}, config);
-      setRappels((prev) => prev.map((r) => (r.id === id ? { ...r, isCompleted: !r.isCompleted } : r)));
+      await axios.put(
+        `http://localhost:3001/api/rappels/${id}/toggle`,
+        {},
+        config
+      );
+      setRappels((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, isCompleted: !r.isCompleted } : r
+        )
+      );
     } catch (err) {
-      Swal.fire("Erreur", "Le statut du rappel n'a pas pu être mis à jour.", "error");
+      Swal.fire(
+        "Erreur",
+        "Le statut du rappel n'a pas pu être mis à jour.",
+        "error"
+      );
     }
   };
 
@@ -148,7 +163,8 @@ const Rappels = () => {
 
   const filteredRappels = rappels.filter((r) => {
     const matchTitle = r.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchClient = r.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const matchClient =
+      r.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
     const visible = searchTerm === "" || matchTitle || matchClient;
     const show = hideCompleted ? !r.isCompleted : true;
     return visible && show;
@@ -198,7 +214,10 @@ const Rappels = () => {
           </label>
         </div>
 
-        <form onSubmit={handleAddRappel} className="mb-8 p-4 bg-card rounded-lg shadow space-y-4">
+        <form
+          onSubmit={handleAddRappel}
+          className="mb-8 p-4 bg-card rounded-lg shadow space-y-4"
+        >
           <div className="flex items-center gap-2">
             <PlusCircle size={24} className="text-text-secondary" />
             <input
@@ -217,7 +236,9 @@ const Rappels = () => {
             >
               <option value="">— Associer à un client —</option>
               {clients.map((client) => (
-                <option key={client.id} value={client.id}>{client.name}</option>
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
               ))}
             </select>
             <input
@@ -226,8 +247,13 @@ const Rappels = () => {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="px-3 py-2 border border-border rounded text-sm bg-bg text-text-primary dark:bg-muted dark:text-white"
             />
-            <button type="submit" className="bg-primary text-white py-2 px-4 rounded-lg hover:opacity-90">
-              Ajouter
+            <button
+              type="submit"
+              className="bg-primary text-white py-2 px-4 rounded-lg hover:opacity-90 flex items-center justify-center"
+              title="Ajouter un rappel"
+            >
+              <PlusCircle size={20} />
+              <span className="sr-only">Ajouter</span>
             </button>
           </div>
         </form>
@@ -236,20 +262,39 @@ const Rappels = () => {
           {sortedGroupKeys.length > 0 ? (
             sortedGroupKeys.map((dateKey) => (
               <div key={dateKey}>
-                <h2 className="text-lg font-bold text-text-secondary mb-3 border-b border-border pb-2">{dateKey}</h2>
+                <h2 className="text-lg font-bold text-text-secondary mb-3 border-b border-border pb-2">
+                  {dateKey}
+                </h2>
                 <ul className="space-y-2">
                   {groupedRappels[dateKey].map((rappel) => (
-                    <li key={rappel.id} className="group flex items-center justify-between bg-card p-4 rounded-lg shadow">
+                    <li
+                      key={rappel.id}
+                      className="group flex items-center justify-between bg-card p-4 rounded-lg shadow"
+                    >
                       <div className="flex items-center gap-4">
-                        <button onClick={() => toggleRappel(rappel.id)} className="flex-shrink-0">
+                        <button
+                          onClick={() => toggleRappel(rappel.id)}
+                          className="flex-shrink-0"
+                        >
                           {rappel.isCompleted ? (
                             <CheckCircle size={24} className="text-green-500" />
                           ) : (
-                            <Circle size={24} className="text-text-secondary hover:text-primary" />
+                            <Circle
+                              size={24}
+                              className="text-text-secondary hover:text-primary"
+                            />
                           )}
                         </button>
                         <div>
-                          <p className={`text-text-primary ${rappel.isCompleted ? "line-through text-text-secondary" : ""}`}>{rappel.title}</p>
+                          <p
+                            className={`text-text-primary ${
+                              rappel.isCompleted
+                                ? "line-through text-text-secondary"
+                                : ""
+                            }`}
+                          >
+                            {rappel.title}
+                          </p>
                           {rappel.clientName && (
                             <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1">
                               <Tag size={12} /> <span>{rappel.clientName}</span>
@@ -257,7 +302,10 @@ const Rappels = () => {
                           )}
                         </div>
                       </div>
-                      <button onClick={() => handleDeleteRappel(rappel.id)} className="text-text-secondary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleDeleteRappel(rappel.id)}
+                        className="text-text-secondary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </li>
@@ -268,7 +316,9 @@ const Rappels = () => {
           ) : (
             <div className="text-center py-10 text-text-secondary">
               <p>Aucun rappel pour le moment.</p>
-              <p className="text-sm">Utilisez le formulaire ci-dessus pour en ajouter un !</p>
+              <p className="text-sm">
+                Utilisez le formulaire ci-dessus pour en ajouter un !
+              </p>
             </div>
           )}
         </div>
