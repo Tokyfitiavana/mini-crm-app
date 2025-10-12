@@ -197,9 +197,6 @@ module.exports = (io) => {
             message: outMessage,
           });
         }
-
-        // On peut aussi accuser réception à l’émetteur si besoin :
-        // io.to(socket.id).emit("message_sent", { conversationId, messageId: msgRes.insertId });
       });
 
       socket.on("typing", ({ conversationId }) => {
