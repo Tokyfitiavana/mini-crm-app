@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 
+import Landing from "./pages/Landing";
+
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -28,6 +30,12 @@ function App() {
   return (
     <Routes>
       <Route
+        path="/"
+        element={
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />
+        }
+      />
+      <Route
         path="/login"
         element={
           <PublicRoute>
@@ -44,6 +52,10 @@ function App() {
         }
       />
 
+      <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/confirm-admin" element={<ConfirmAdmin />} />
       <Route
         path="/dashboard"
         element={
@@ -132,22 +144,6 @@ function App() {
           </PrivateRoute>
         }
       />
-
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route path="/notifications" element={<NotificationsPage />} />
-      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/confirm-admin" element={<ConfirmAdmin />} />
-
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

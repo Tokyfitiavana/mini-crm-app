@@ -91,7 +91,7 @@ const Sidebar = () => {
           onClick={() => setCollapsed((prev) => !prev)}
           className="w-full px-3 py-2 bg-surface hover:bg-bg border border-border rounded text-sm text-text-secondary"
         >
-          {collapsed ? "▶ Déplier" : "◀ Réduire"}
+          {collapsed ? "▶" : "◀ "}
         </button>
       </div>
     </aside>

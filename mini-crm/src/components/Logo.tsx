@@ -11,16 +11,17 @@ const ApexLogo = ({ className = "" }: { className?: string }) => {
       <path d="M10 40 L25 10 L40 40 L32.5 28 L17.5 28 Z" fill="#8B5CF6" />
       <circle cx="25" cy="8" r="4" fill="#F97316" />
       <text
-        x="55"
-        y="36"
-        fontFamily="Poppins, sans-serif"
-        fontSize="30"
-        fontWeight="600"
-        fill="#111827"
-        className="dark:fill-white"
-      >
-        Apex
-      </text>
+  x="55"
+  y="36"
+  fontFamily="Poppins, sans-serif"
+  fontSize="30"
+  fontWeight="600"
+  fill="#111827"            // couleur par défaut (mode clair)
+  className="dark:fill-gray-100"  // couleur en mode sombre
+>
+  Apex
+</text>
+
       <text
         x="135"
         y="36"
